@@ -1,6 +1,6 @@
 package micheal65536.fountain;
 
-import com.github.steveice10.mc.protocol.packet.ingame.serverbound.player.ServerboundMovePlayerPosRotPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.player.ServerboundMovePlayerPosRotPacket;
 import org.apache.logging.log4j.LogManager;
 import org.cloudburstmc.math.vector.Vector3f;
 import org.cloudburstmc.protocol.bedrock.data.PlayerActionType;
@@ -65,7 +65,7 @@ public final class ClientPacketHandler implements BedrockPacketHandler
 		}
 		else
 		{
-			this.playerSession.sendJavaPacket(new ServerboundMovePlayerPosRotPacket(packet.isOnGround(), x, y - 1.62f, z, yaw, pitch));
+			this.playerSession.sendJavaPacket(new ServerboundMovePlayerPosRotPacket(packet.isOnGround(), false, (double) x, (double) (y - 1.62f), (double) z, yaw, pitch));
 		}
 		return PacketSignal.HANDLED;
 	}

@@ -1,7 +1,8 @@
 package micheal65536.fountain.utils.entities;
 
-import com.github.steveice10.mc.protocol.data.game.entity.metadata.EntityMetadata;
-import com.github.steveice10.mc.protocol.data.game.entity.metadata.MetadataType;
+import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.EntityMetadata;
+import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.MetadataTypes;
+import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.MetadataType;
 import org.jetbrains.annotations.NotNull;
 
 public class MinecartJavaEntityInstance<T extends MinecartBedrockEntityInstance> extends BaseJavaEntityInstanceWithSingleBedrockEntityInstance<T>
@@ -47,11 +48,11 @@ public class MinecartJavaEntityInstance<T extends MinecartBedrockEntityInstance>
 	protected void onMetadataFieldChanged(@NotNull EntityMetadata<?, ? extends MetadataType<?>> metadata)
 	{
 		super.onMetadataFieldChanged(metadata);
-		getMetadataField(metadata, 8, MetadataType.INT, value ->
+		getMetadataField(metadata, 8, MetadataTypes.INT, value ->
 		{
 			this.bedrockEntityInstance.hurtTicks = value;
 		});
-		getMetadataField(metadata, 9, MetadataType.INT, value ->
+		getMetadataField(metadata, 9, MetadataTypes.INT, value ->
 		{
 			this.bedrockEntityInstance.hurtDirection = value;
 		});

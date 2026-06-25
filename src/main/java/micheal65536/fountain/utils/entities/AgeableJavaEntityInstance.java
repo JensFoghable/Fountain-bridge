@@ -1,8 +1,9 @@
 package micheal65536.fountain.utils.entities;
 
-import com.github.steveice10.mc.protocol.data.game.entity.EntityEvent;
-import com.github.steveice10.mc.protocol.data.game.entity.metadata.EntityMetadata;
-import com.github.steveice10.mc.protocol.data.game.entity.metadata.MetadataType;
+import org.geysermc.mcprotocollib.protocol.data.game.entity.EntityEvent;
+import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.EntityMetadata;
+import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.MetadataTypes;
+import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.MetadataType;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityEventType;
 import org.jetbrains.annotations.NotNull;
 
@@ -17,7 +18,7 @@ public class AgeableJavaEntityInstance<T extends AgeableBedrockEntityInstance> e
 	protected void onMetadataFieldChanged(@NotNull EntityMetadata<?, ? extends MetadataType<?>> metadata)
 	{
 		super.onMetadataFieldChanged(metadata);
-		getMetadataField(metadata, 16, MetadataType.BOOLEAN, value ->
+		getMetadataField(metadata, 16, MetadataTypes.BOOLEAN, value ->
 		{
 			this.bedrockEntityInstance.baby = value;
 		});

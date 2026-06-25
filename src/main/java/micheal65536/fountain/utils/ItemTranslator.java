@@ -1,7 +1,6 @@
 package micheal65536.fountain.utils;
 
-import com.github.steveice10.mc.protocol.data.game.entity.metadata.ItemStack;
-import com.github.steveice10.opennbt.tag.builtin.CompoundTag;
+import org.geysermc.mcprotocollib.protocol.data.game.item.ItemStack;
 import org.apache.logging.log4j.LogManager;
 import org.cloudburstmc.protocol.bedrock.data.inventory.ItemData;
 import org.jetbrains.annotations.NotNull;
@@ -33,8 +32,7 @@ public final class ItemTranslator
 
 		if (bedrockMapping.toolWear)
 		{
-			CompoundTag nbt = itemStack.getNbt();
-			int damage = nbt != null && nbt.contains("Damage") ? (int) nbt.get("Damage").getValue() : 0;
+			int damage = ItemStackDataHelper.readDamage(itemStack);
 			builder.damage(damage);
 		}
 		else

@@ -1,8 +1,6 @@
 package micheal65536.fountain.utils;
 
-import com.github.steveice10.mc.protocol.data.game.level.block.BlockEntityInfo;
-import com.github.steveice10.opennbt.tag.builtin.CompoundTag;
-import com.github.steveice10.opennbt.tag.builtin.IntTag;
+import org.geysermc.mcprotocollib.protocol.data.game.level.block.BlockEntityInfo;
 import org.apache.logging.log4j.LogManager;
 import org.cloudburstmc.nbt.NbtMap;
 import org.cloudburstmc.nbt.NbtMapBuilder;
@@ -67,14 +65,14 @@ public class BlockEntityTranslator
 					LogManager.getLogger().debug("Not sending moving block entity data until server provides data");
 					return null;
 				}
-				CompoundTag javaNbt = javaBlockEntityInfo.getNbt();
+				NbtMap javaNbt = javaBlockEntityInfo.getNbt();
 
-				if (!javaNbt.contains("blockStateId"))
+				if (!javaNbt.containsKey("blockStateId") && !javaNbt.containsKey("blockState"))
 				{
 					LogManager.getLogger().warn("Moving block entity data did not contain numeric block state ID");
 					return null;
 				}
-				int javaBlockId = ((IntTag) javaNbt.get("blockStateId")).getValue();
+				int javaBlockId = javaNbt.containsKey("blockStateId") ? javaNbt.getInt("blockStateId") : javaNbt.getInt("blockState");
 				JavaBlocks.BedrockMapping bedrockMapping = JavaBlocks.getBedrockMapping(javaBlockId);
 				if (bedrockMapping == null)
 				{
@@ -104,15 +102,15 @@ public class BlockEntityTranslator
 					}
 				}
 
-				if (!javaNbt.contains("basePos"))
+				if (javaNbt.get("basePos") == null)
 				{
 					LogManager.getLogger().warn("Moving block entity data did not contain piston base position");
 					return null;
 				}
-				CompoundTag basePosTag = javaNbt.get("basePos");
-				builder.putInt("pistonPosX", ((IntTag) basePosTag.get("x")).getValue());
-				builder.putInt("pistonPosY", ((IntTag) basePosTag.get("y")).getValue());
-				builder.putInt("pistonPosZ", ((IntTag) basePosTag.get("z")).getValue());
+				NbtMap basePosTag = (NbtMap) javaNbt.get("basePos");
+				builder.putInt("pistonPosX", basePosTag.getInt("x"));
+				builder.putInt("pistonPosY", basePosTag.getInt("y"));
+				builder.putInt("pistonPosZ", basePosTag.getInt("z"));
 
 				return builder.build();
 			}

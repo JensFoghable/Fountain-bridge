@@ -1,59 +1,59 @@
 package micheal65536.fountain;
 
-import com.github.steveice10.mc.protocol.data.game.entity.player.GameMode;
-import com.github.steveice10.mc.protocol.data.game.level.block.BlockChangeEntry;
-import com.github.steveice10.mc.protocol.data.game.level.notify.GameEvent;
-import com.github.steveice10.mc.protocol.packet.common.clientbound.ClientboundCustomPayloadPacket;
-import com.github.steveice10.mc.protocol.packet.common.clientbound.ClientboundDisconnectPacket;
-import com.github.steveice10.mc.protocol.packet.common.clientbound.ClientboundPingPacket;
-import com.github.steveice10.mc.protocol.packet.common.serverbound.ServerboundPongPacket;
-import com.github.steveice10.mc.protocol.packet.configuration.clientbound.ClientboundRegistryDataPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.ClientboundChangeDifficultyPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.ClientboundDelimiterPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.ClientboundLoginPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.entity.ClientboundAnimatePacket;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.entity.ClientboundDamageEventPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.entity.ClientboundEntityEventPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.entity.ClientboundMoveEntityPosPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.entity.ClientboundMoveEntityPosRotPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.entity.ClientboundMoveEntityRotPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.entity.ClientboundRemoveEntitiesPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.entity.ClientboundRotateHeadPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.entity.ClientboundSetEntityDataPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.entity.ClientboundSetEntityMotionPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.entity.ClientboundSetEquipmentPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.entity.ClientboundSetPassengersPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.entity.ClientboundTakeItemEntityPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.entity.ClientboundTeleportEntityPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.entity.ClientboundUpdateAttributesPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.entity.player.ClientboundBlockChangedAckPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.entity.player.ClientboundPlayerPositionPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.entity.player.ClientboundSetCarriedItemPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.entity.spawn.ClientboundAddEntityPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.inventory.ClientboundContainerSetContentPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.inventory.ClientboundContainerSetSlotPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.level.ClientboundBlockDestructionPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.level.ClientboundBlockEntityDataPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.level.ClientboundBlockEventPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.level.ClientboundBlockUpdatePacket;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.level.ClientboundChunkBatchFinishedPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.level.ClientboundChunkBatchStartPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.level.ClientboundForgetLevelChunkPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.level.ClientboundGameEventPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.level.ClientboundLevelChunkWithLightPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.level.ClientboundLevelEventPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.level.ClientboundLevelParticlesPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.level.ClientboundLightUpdatePacket;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.level.ClientboundSectionBlocksUpdatePacket;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.level.ClientboundSetTimePacket;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.level.ClientboundSoundPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.serverbound.level.ServerboundAcceptTeleportationPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.serverbound.level.ServerboundChunkBatchReceivedPacket;
+import org.geysermc.mcprotocollib.protocol.data.game.entity.player.GameMode;
+import org.geysermc.mcprotocollib.protocol.data.game.level.block.BlockChangeEntry;
+import org.geysermc.mcprotocollib.protocol.data.game.level.notify.GameEvent;
+import org.geysermc.mcprotocollib.protocol.packet.common.clientbound.ClientboundCustomPayloadPacket;
+import org.geysermc.mcprotocollib.protocol.packet.common.clientbound.ClientboundDisconnectPacket;
+import org.geysermc.mcprotocollib.protocol.packet.common.clientbound.ClientboundPingPacket;
+import org.geysermc.mcprotocollib.protocol.packet.common.serverbound.ServerboundPongPacket;
+import org.geysermc.mcprotocollib.protocol.packet.configuration.clientbound.ClientboundRegistryDataPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.ClientboundChangeDifficultyPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.ClientboundDelimiterPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.ClientboundLoginPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.ClientboundAnimatePacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.ClientboundDamageEventPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.ClientboundEntityEventPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.ClientboundMoveEntityPosPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.ClientboundMoveEntityPosRotPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.ClientboundMoveEntityRotPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.ClientboundRemoveEntitiesPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.ClientboundRotateHeadPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.ClientboundSetEntityDataPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.ClientboundSetEntityMotionPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.ClientboundSetEquipmentPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.ClientboundSetPassengersPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.ClientboundTakeItemEntityPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.ClientboundTeleportEntityPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.ClientboundUpdateAttributesPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.player.ClientboundBlockChangedAckPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.player.ClientboundPlayerPositionPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.player.ClientboundSetHeldSlotPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.ClientboundAddEntityPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.inventory.ClientboundContainerSetContentPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.inventory.ClientboundContainerSetSlotPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.ClientboundBlockDestructionPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.ClientboundBlockEntityDataPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.ClientboundBlockEventPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.ClientboundBlockUpdatePacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.ClientboundChunkBatchFinishedPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.ClientboundChunkBatchStartPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.ClientboundForgetLevelChunkPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.ClientboundGameEventPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.ClientboundLevelChunkWithLightPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.ClientboundLevelEventPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.ClientboundLevelParticlesPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.ClientboundLightUpdatePacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.ClientboundSectionBlocksUpdatePacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.ClientboundSetTimePacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.ClientboundSoundPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.level.ServerboundAcceptTeleportationPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.level.ServerboundChunkBatchReceivedPacket;
 import com.github.steveice10.opennbt.tag.builtin.CompoundTag;
-import com.github.steveice10.packetlib.Session;
-import com.github.steveice10.packetlib.event.session.DisconnectedEvent;
-import com.github.steveice10.packetlib.event.session.SessionAdapter;
-import com.github.steveice10.packetlib.packet.Packet;
+import org.geysermc.mcprotocollib.network.Session;
+import org.geysermc.mcprotocollib.network.event.session.DisconnectedEvent;
+import org.geysermc.mcprotocollib.network.event.session.SessionAdapter;
+import org.geysermc.mcprotocollib.network.packet.Packet;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.apache.logging.log4j.LogManager;
 import org.cloudburstmc.math.vector.Vector2f;
@@ -92,7 +92,14 @@ public final class ServerPacketHandler extends SessionAdapter
 			}
 			else if (packet instanceof ClientboundRegistryDataPacket)
 			{
-				this.playerSession.loadJavaBiomes(((CompoundTag) ((ClientboundRegistryDataPacket) packet).getRegistry().get("minecraft:worldgen/biome")).get("value"));
+				for (var entry : ((ClientboundRegistryDataPacket) packet).getEntries())
+				{
+					if (entry.getId().asString().equals("minecraft:worldgen/biome"))
+					{
+						this.playerSession.loadJavaBiomes(entry.getData().getList("value", org.cloudburstmc.nbt.NbtType.COMPOUND));
+						break;
+					}
+				}
 			}
 			else if (packet instanceof ClientboundCustomPayloadPacket && ((ClientboundCustomPayloadPacket) packet).getChannel().equals("fabric:registry/sync/direct"))
 			{
@@ -110,13 +117,13 @@ public final class ServerPacketHandler extends SessionAdapter
 
 			else if (packet instanceof ClientboundSetTimePacket)
 			{
-				this.playerSession.updateTime(((ClientboundSetTimePacket) packet).getTime());
+				this.playerSession.updateTime(((ClientboundSetTimePacket) packet).getGameTime());
 			}
 			else if (packet instanceof ClientboundChangeDifficultyPacket)
 			{
 				this.playerSession.onJavaDifficultyChanged(((ClientboundChangeDifficultyPacket) packet).getDifficulty());
 			}
-			else if (packet instanceof ClientboundGameEventPacket && ((ClientboundGameEventPacket) packet).getNotification() == GameEvent.CHANGE_GAMEMODE)
+			else if (packet instanceof ClientboundGameEventPacket && ((ClientboundGameEventPacket) packet).getNotification() == GameEvent.CHANGE_GAME_MODE)
 			{
 				this.playerSession.onJavaGameModeChanged((GameMode) ((ClientboundGameEventPacket) packet).getValue());
 			}
@@ -168,7 +175,7 @@ public final class ServerPacketHandler extends SessionAdapter
 
 			else if (packet instanceof ClientboundPlayerPositionPacket)
 			{
-				this.playerSession.sendJavaPacket(new ServerboundAcceptTeleportationPacket(((ClientboundPlayerPositionPacket) packet).getTeleportId()));
+				this.playerSession.sendJavaPacket(new ServerboundAcceptTeleportationPacket(((ClientboundPlayerPositionPacket) packet).getId()));
 			}
 			else if (packet instanceof ClientboundBlockChangedAckPacket)
 			{
@@ -190,9 +197,9 @@ public final class ServerPacketHandler extends SessionAdapter
 			{
 				this.playerSession.onJavaSetHotbarResponse(((ClientboundCustomPayloadPacket) packet).getData());
 			}
-			else if (packet instanceof ClientboundSetCarriedItemPacket)
+			else if (packet instanceof ClientboundSetHeldSlotPacket)
 			{
-				this.playerSession.onJavaSetCarriedItem(((ClientboundSetCarriedItemPacket) packet).getSlot());
+				this.playerSession.onJavaSetCarriedItem(((ClientboundSetHeldSlotPacket) packet).getSlot());
 			}
 			else if (packet instanceof ClientboundCustomPayloadPacket && ((ClientboundCustomPayloadPacket) packet).getChannel().equals("fountain:item_particle"))
 			{
@@ -252,9 +259,9 @@ public final class ServerPacketHandler extends SessionAdapter
 				}
 				else if (packet instanceof ClientboundTeleportEntityPacket)
 				{
-					entityId = ((ClientboundTeleportEntityPacket) packet).getEntityId();
-					pos = Vector3f.from(((ClientboundTeleportEntityPacket) packet).getX(), ((ClientboundTeleportEntityPacket) packet).getY(), ((ClientboundTeleportEntityPacket) packet).getZ());
-					rot = Vector2f.from(((ClientboundTeleportEntityPacket) packet).getPitch(), ((ClientboundTeleportEntityPacket) packet).getYaw());
+					entityId = ((ClientboundTeleportEntityPacket) packet).getId();
+					pos = Vector3f.from(((ClientboundTeleportEntityPacket) packet).getPosition().getX(), ((ClientboundTeleportEntityPacket) packet).getPosition().getY(), ((ClientboundTeleportEntityPacket) packet).getPosition().getZ());
+					rot = Vector2f.from(((ClientboundTeleportEntityPacket) packet).getXRot(), ((ClientboundTeleportEntityPacket) packet).getYRot());
 					onGround = ((ClientboundTeleportEntityPacket) packet).isOnGround();
 				}
 				else
@@ -266,7 +273,7 @@ public final class ServerPacketHandler extends SessionAdapter
 			}
 			else if (packet instanceof ClientboundSetEntityMotionPacket)
 			{
-				this.playerSession.onJavaEntitySetVelocity(((ClientboundSetEntityMotionPacket) packet).getEntityId(), Vector3f.from(((ClientboundSetEntityMotionPacket) packet).getMotionX(), ((ClientboundSetEntityMotionPacket) packet).getMotionY(), ((ClientboundSetEntityMotionPacket) packet).getMotionZ()));
+				this.playerSession.onJavaEntitySetVelocity(((ClientboundSetEntityMotionPacket) packet).getEntityId(), Vector3f.from(((ClientboundSetEntityMotionPacket) packet).getMovement().getX(), ((ClientboundSetEntityMotionPacket) packet).getMovement().getY(), ((ClientboundSetEntityMotionPacket) packet).getMovement().getZ()));
 			}
 			else if (packet instanceof ClientboundRotateHeadPacket)
 			{

@@ -1,9 +1,10 @@
 package micheal65536.fountain.utils.entities;
 
-import com.github.steveice10.mc.protocol.data.game.entity.attribute.Attribute;
-import com.github.steveice10.mc.protocol.data.game.entity.attribute.AttributeType;
-import com.github.steveice10.mc.protocol.data.game.entity.metadata.EntityMetadata;
-import com.github.steveice10.mc.protocol.data.game.entity.metadata.MetadataType;
+import org.geysermc.mcprotocollib.protocol.data.game.entity.attribute.Attribute;
+import org.geysermc.mcprotocollib.protocol.data.game.entity.attribute.AttributeType;
+import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.EntityMetadata;
+import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.MetadataTypes;
+import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.MetadataType;
 import org.cloudburstmc.protocol.bedrock.data.AttributeData;
 import org.jetbrains.annotations.NotNull;
 
@@ -40,7 +41,7 @@ public final class LocalPlayerJavaEntityInstance extends EntityManager.JavaEntit
 	protected void onMetadataFieldChanged(@NotNull EntityMetadata<?, ? extends MetadataType<?>> metadata)
 	{
 		super.onMetadataFieldChanged(metadata);
-		getMetadataField(metadata, 9, MetadataType.FLOAT, value ->
+		getMetadataField(metadata, 9, MetadataTypes.FLOAT, value ->
 		{
 			this.health = value;
 		});
@@ -54,7 +55,7 @@ public final class LocalPlayerJavaEntityInstance extends EntityManager.JavaEntit
 		{
 			switch ((AttributeType.Builtin) attribute.getType())
 			{
-				case GENERIC_MAX_HEALTH ->
+				case MAX_HEALTH ->
 				{
 					this.maxHealth = (float) getAttributeValueWithModifiers(attribute);
 				}

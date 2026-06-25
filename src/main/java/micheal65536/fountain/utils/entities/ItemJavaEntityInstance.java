@@ -1,7 +1,8 @@
 package micheal65536.fountain.utils.entities;
 
-import com.github.steveice10.mc.protocol.data.game.entity.metadata.EntityMetadata;
-import com.github.steveice10.mc.protocol.data.game.entity.metadata.MetadataType;
+import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.EntityMetadata;
+import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.MetadataType;
+import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.MetadataTypes;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityEventType;
 import org.cloudburstmc.protocol.bedrock.data.inventory.ItemData;
 import org.jetbrains.annotations.NotNull;
@@ -71,9 +72,9 @@ public final class ItemJavaEntityInstance extends EntityManager.JavaEntityInstan
 	}
 
 	@Override
-	protected void onMetadataFieldChanged(@NotNull EntityMetadata<?, ?> metadata)
+	protected void onMetadataFieldChanged(@NotNull EntityMetadata<?, ? extends MetadataType<?>> metadata)
 	{
-		getMetadataField(metadata, 0, MetadataType.BYTE, value ->
+		getMetadataField(metadata, 0, MetadataTypes.BYTE, value ->
 		{
 			this.burning = (value & 0x01) != 0;
 			if (this.bedrockEntityInstance != null)
@@ -81,7 +82,7 @@ public final class ItemJavaEntityInstance extends EntityManager.JavaEntityInstan
 				this.bedrockEntityInstance.burning = this.burning;
 			}
 		});
-		getMetadataField(metadata, 5, MetadataType.BOOLEAN, value ->
+		getMetadataField(metadata, 5, MetadataTypes.BOOLEAN, value ->
 		{
 			this.gravity = value;
 			if (this.bedrockEntityInstance != null)
@@ -94,7 +95,7 @@ public final class ItemJavaEntityInstance extends EntityManager.JavaEntityInstan
 			this.bedrockEntityInstance.sendData();
 		}
 
-		getMetadataField(metadata, 8, MetadataType.ITEM, value ->
+		getMetadataField(metadata, 8, MetadataTypes.ITEM_STACK, value ->
 		{
 			ItemData oldItem = this.item;
 			this.item = ItemTranslator.translateJavaToBedrock(value, this.fabricRegistryManager);

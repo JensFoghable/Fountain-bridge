@@ -1,9 +1,6 @@
 package micheal65536.fountain.utils;
 
-import com.github.steveice10.mc.protocol.data.game.entity.metadata.ItemStack;
-import com.github.steveice10.opennbt.tag.builtin.CompoundTag;
-import com.github.steveice10.opennbt.tag.builtin.IntTag;
-import com.github.steveice10.opennbt.tag.builtin.StringTag;
+import org.geysermc.mcprotocollib.protocol.data.game.item.ItemStack;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import com.google.gson.stream.JsonWriter;
@@ -423,9 +420,12 @@ public final class GenoaInventoryHelper
 		}
 		else
 		{
-			CompoundTag nbt = itemStack.getNbt();
-			String instanceId = nbt != null && nbt.contains("GenoaInstanceId") ? (String) nbt.get("GenoaInstanceId").getValue() : UUID.randomUUID().toString();
-			int wear = nbt != null && nbt.contains("Damage") ? (int) nbt.get("Damage").getValue() : 0;
+			String instanceId = ItemStackDataHelper.readGenoaInstanceId(itemStack);
+			if (instanceId == null)
+			{
+				instanceId = UUID.randomUUID().toString();
+			}
+			int wear = ItemStackDataHelper.readDamage(itemStack);
 			return new Item(uuid, instanceId, wear);
 		}
 	}
@@ -492,10 +492,7 @@ public final class GenoaInventoryHelper
 
 		if (instanceId != null)
 		{
-			CompoundTag nbt = new CompoundTag("");
-			nbt.put(new IntTag("Damage", wear));
-			nbt.put(new StringTag("GenoaInstanceId", instanceId));
-			return new ItemStack(javaId, count, nbt);
+			return ItemStackDataHelper.withGenoaData(javaId, count, instanceId, wear);
 		}
 		else
 		{

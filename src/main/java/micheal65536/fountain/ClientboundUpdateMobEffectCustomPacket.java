@@ -1,81 +1,91 @@
 package micheal65536.fountain;
 
-import com.github.steveice10.mc.protocol.codec.MinecraftCodecHelper;
-import com.github.steveice10.mc.protocol.data.game.entity.Effect;
-import com.github.steveice10.mc.protocol.data.game.level.event.LevelEventType;
-import com.github.steveice10.mc.protocol.data.game.level.sound.BuiltinSound;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.entity.ClientboundUpdateMobEffectPacket;
+import org.geysermc.mcprotocollib.protocol.codec.MinecraftPacket;
+import org.geysermc.mcprotocollib.protocol.codec.MinecraftTypes;
+import org.geysermc.mcprotocollib.protocol.data.game.entity.Effect;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.ClientboundUpdateMobEffectPacket;
 import io.netty.buffer.ByteBuf;
-import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
-import java.lang.reflect.Field;
-import java.util.Map;
 
-public class ClientboundUpdateMobEffectCustomPacket extends ClientboundUpdateMobEffectPacket
+/**
+ * Custom packet that intercepts ClientboundUpdateMobEffectPacket to handle
+ * effect IDs beyond the vanilla range (custom modded effects).
+ */
+public class ClientboundUpdateMobEffectCustomPacket implements MinecraftPacket
 {
-	public static ClientboundUpdateMobEffectCustomPacket read(ByteBuf in, MinecraftCodecHelper helper) throws IOException
+	public static ClientboundUpdateMobEffectCustomPacket read(ByteBuf in) 
 	{
-		ByteBuf byteBuf = in.duplicate();
-		helper.readVarInt(byteBuf);
-		int effectId = helper.readVarInt(byteBuf);
+		int mark = in.readerIndex();
+		int entityId = MinecraftTypes.readVarInt(in);
+		int effectId = MinecraftTypes.readVarInt(in);
+
 		if (effectId >= Effect.values().length)
 		{
-			Int2ObjectMap<LevelEventType> levelEvents;
-			Map<String, BuiltinSound> soundNames;
-			try
+			// Skip the rest of the packet data
+			int amplifier = MinecraftTypes.readVarInt(in);
+			int duration = MinecraftTypes.readVarInt(in);
+			byte flags = in.readByte();
+			boolean ambient = (flags & 0x01) != 0;
+			boolean showParticles = (flags & 0x02) != 0;
+			boolean showIcon = (flags & 0x04) != 0;
+			boolean blend = (flags & 0x08) != 0;
+			// Skip hidden effect (optional)
+			if (in.readBoolean())
 			{
-				Field levelEventsField = MinecraftCodecHelper.class.getDeclaredField("levelEvents");
-				Field soundNamesField = MinecraftCodecHelper.class.getDeclaredField("soundNames");
-				levelEventsField.setAccessible(true);
-				soundNamesField.setAccessible(true);
-				levelEvents = (Int2ObjectMap<LevelEventType>) levelEventsField.get(helper);
-				soundNames = (Map<String, BuiltinSound>) soundNamesField.get(helper);
+				MinecraftTypes.readVarInt(in); // skip hidden effect id
+				MinecraftTypes.readVarInt(in); // skip hidden effect amplifier
+				MinecraftTypes.readVarInt(in); // skip hidden effect duration
+				in.readByte(); // skip hidden effect flags
 			}
-			catch (Exception exception)
-			{
-				throw new AssertionError(exception);
-			}
-			return new ClientboundUpdateMobEffectCustomPacket(effectId, false, in, new MinecraftCodecHelper(levelEvents, soundNames)
-			{
-				private int varIntCounter = 0;
-
-				@Override
-				public int readVarInt(ByteBuf buf)
-				{
-					if (this.varIntCounter++ == 1)
-					{
-						super.readVarInt(buf);
-						return 0;
-					}
-					else
-					{
-						return super.readVarInt(buf);
-					}
-				}
-			});
+			return new ClientboundUpdateMobEffectCustomPacket(entityId, effectId, amplifier, duration, ambient, showParticles, showIcon, blend);
 		}
 		else
 		{
-			return new ClientboundUpdateMobEffectCustomPacket(effectId, true, in, helper);
+			in.readerIndex(mark);
+			return null;
 		}
 	}
 
+	public final int entityId;
 	public final int effectId;
+	public final int amplifier;
+	public final int duration;
+	public final boolean ambient;
+	public final boolean showParticles;
+	public final boolean showIcon;
+	public final boolean blend;
 	private final boolean hasVanillaEffect;
 
-	private ClientboundUpdateMobEffectCustomPacket(int effectId, boolean hasVanillaEffect, ByteBuf in, MinecraftCodecHelper helper) throws IOException
+	private ClientboundUpdateMobEffectCustomPacket(int entityId, int effectId, int amplifier, int duration, boolean ambient, boolean showParticles, boolean showIcon, boolean blend)
 	{
-		super(in, helper);
+		this.entityId = entityId;
 		this.effectId = effectId;
-		this.hasVanillaEffect = hasVanillaEffect;
+		this.amplifier = amplifier;
+		this.duration = duration;
+		this.ambient = ambient;
+		this.showParticles = showParticles;
+		this.showIcon = showIcon;
+		this.blend = blend;
+		this.hasVanillaEffect = effectId < Effect.values().length;
 	}
 
-	@Override
 	@Nullable
 	public Effect getEffect()
 	{
-		return this.hasVanillaEffect ? super.getEffect() : null;
+		return hasVanillaEffect ? Effect.values()[this.effectId] : null;
+	}
+
+	@Override
+	public void serialize(ByteBuf buf)
+	{
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public boolean shouldRunOnGameThread()
+	{
+		return true;
 	}
 }

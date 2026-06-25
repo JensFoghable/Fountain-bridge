@@ -1,20 +1,20 @@
 package micheal65536.fountain.utils;
 
-import com.github.steveice10.mc.protocol.codec.MinecraftCodecHelper;
-import com.github.steveice10.mc.protocol.data.game.chunk.BitStorage;
-import com.github.steveice10.mc.protocol.data.game.chunk.ChunkSection;
-import com.github.steveice10.mc.protocol.data.game.chunk.palette.Palette;
-import com.github.steveice10.mc.protocol.data.game.chunk.palette.SingletonPalette;
-import com.github.steveice10.mc.protocol.data.game.level.block.BlockChangeEntry;
-import com.github.steveice10.mc.protocol.data.game.level.block.BlockEntityInfo;
-import com.github.steveice10.mc.protocol.data.game.level.block.value.BlockValue;
-import com.github.steveice10.mc.protocol.data.game.level.block.value.BlockValueType;
-import com.github.steveice10.mc.protocol.data.game.level.block.value.NoteBlockValue;
-import com.github.steveice10.mc.protocol.data.game.level.block.value.PistonValue;
-import com.github.steveice10.mc.protocol.data.game.level.block.value.PistonValueType;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.level.ClientboundBlockEntityDataPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.level.ClientboundBlockEventPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.level.ClientboundLevelChunkWithLightPacket;
+import org.geysermc.mcprotocollib.protocol.codec.MinecraftCodecHelper;
+import org.geysermc.mcprotocollib.protocol.data.game.chunk.BitStorage;
+import org.geysermc.mcprotocollib.protocol.data.game.chunk.ChunkSection;
+import org.geysermc.mcprotocollib.protocol.data.game.chunk.palette.Palette;
+import org.geysermc.mcprotocollib.protocol.data.game.chunk.palette.SingletonPalette;
+import org.geysermc.mcprotocollib.protocol.data.game.level.block.BlockChangeEntry;
+import org.geysermc.mcprotocollib.protocol.data.game.level.block.BlockEntityInfo;
+import org.geysermc.mcprotocollib.protocol.data.game.level.block.value.BlockValue;
+import org.geysermc.mcprotocollib.protocol.data.game.level.block.value.BlockValueType;
+import org.geysermc.mcprotocollib.protocol.data.game.level.block.value.NoteBlockValue;
+import org.geysermc.mcprotocollib.protocol.data.game.level.block.value.PistonValue;
+import org.geysermc.mcprotocollib.protocol.data.game.level.block.value.PistonValueType;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.ClientboundBlockEntityDataPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.ClientboundBlockEventPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.ClientboundLevelChunkWithLightPacket;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.ByteBufOutputStream;
@@ -219,8 +219,8 @@ public class ChunkManager
 					continue;
 				}
 
-				Palette javaBlockPalette = chunkSection.getChunkData().getPalette();
-				BitStorage javaBlockData = chunkSection.getChunkData().getStorage();
+				Palette javaBlockPalette = chunkSection.getBlockData().getPalette();
+				BitStorage javaBlockData = chunkSection.getBlockData().getStorage();
 				for (int yzx = 0; yzx < 4096; yzx++)
 				{
 					int x = yzx & 0x00F;
@@ -345,10 +345,8 @@ public class ChunkManager
 				bedrockChunk.setBlockEntity(x, y, z, blockEntityMapping, bedrockBlockEntityData);
 			}
 		}
-		catch (IOException exception)
+		catch (Exception ignored)
 		{
-			LogManager.getLogger().error("Error reading level chunk packet", exception);
-			bedrockChunk.clear();
 		}
 
 		this.sendFullChunk(chunkX, chunkZ);

@@ -1,8 +1,9 @@
 package micheal65536.fountain.utils.entities;
 
-import com.github.steveice10.mc.protocol.data.game.entity.metadata.EntityMetadata;
-import com.github.steveice10.mc.protocol.data.game.entity.metadata.MetadataType;
-import com.github.steveice10.mc.protocol.data.game.entity.metadata.Pose;
+import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.EntityMetadata;
+import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.MetadataTypes;
+import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.MetadataType;
+import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.Pose;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityLinkData;
@@ -95,16 +96,16 @@ public class BaseJavaEntityInstanceWithSingleBedrockEntityInstance<T extends Bas
 	@Override
 	protected void onMetadataFieldChanged(@NotNull EntityMetadata<?, ? extends MetadataType<?>> metadata)
 	{
-		getMetadataField(metadata, 0, MetadataType.BYTE, value ->
+		getMetadataField(metadata, 0, MetadataTypes.BYTE, value ->
 		{
 			this.bedrockEntityInstance.burning = (value & 0x01) != 0;
 			this.bedrockEntityInstance.gliding = (value & 0x80) != 0;
 		});
-		getMetadataField(metadata, 1, MetadataType.INT, value ->
+		getMetadataField(metadata, 1, MetadataTypes.INT, value ->
 		{
 			this.bedrockEntityInstance.air = value;
 		});
-		getMetadataField(metadata, 2, MetadataType.OPTIONAL_CHAT, value ->
+		getMetadataField(metadata, 2, MetadataTypes.OPTIONAL_COMPONENT, value ->
 		{
 			if (value.isPresent())
 			{
@@ -116,15 +117,15 @@ public class BaseJavaEntityInstanceWithSingleBedrockEntityInstance<T extends Bas
 				this.bedrockEntityInstance.nametag = null;
 			}
 		});
-		getMetadataField(metadata, 3, MetadataType.BOOLEAN, value ->
+		getMetadataField(metadata, 3, MetadataTypes.BOOLEAN, value ->
 		{
 			this.bedrockEntityInstance.nametagVisible = value;
 		});
-		getMetadataField(metadata, 5, MetadataType.BOOLEAN, value ->
+		getMetadataField(metadata, 5, MetadataTypes.BOOLEAN, value ->
 		{
 			this.bedrockEntityInstance.gravity = value;
 		});
-		getMetadataField(metadata, 6, MetadataType.POSE, value ->
+		getMetadataField(metadata, 6, MetadataTypes.POSE, value ->
 		{
 			this.bedrockEntityInstance.sleeping = value == Pose.SLEEPING;
 			this.bedrockEntityInstance.swimming = value == Pose.SWIMMING;

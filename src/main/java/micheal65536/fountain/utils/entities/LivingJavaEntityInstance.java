@@ -1,11 +1,12 @@
 package micheal65536.fountain.utils.entities;
 
-import com.github.steveice10.mc.protocol.data.game.entity.EntityEvent;
-import com.github.steveice10.mc.protocol.data.game.entity.attribute.Attribute;
-import com.github.steveice10.mc.protocol.data.game.entity.attribute.AttributeType;
-import com.github.steveice10.mc.protocol.data.game.entity.metadata.EntityMetadata;
-import com.github.steveice10.mc.protocol.data.game.entity.metadata.MetadataType;
-import com.github.steveice10.mc.protocol.data.game.entity.player.Animation;
+import org.geysermc.mcprotocollib.protocol.data.game.entity.EntityEvent;
+import org.geysermc.mcprotocollib.protocol.data.game.entity.attribute.Attribute;
+import org.geysermc.mcprotocollib.protocol.data.game.entity.attribute.AttributeType;
+import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.EntityMetadata;
+import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.MetadataTypes;
+import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.MetadataType;
+import org.geysermc.mcprotocollib.protocol.data.game.entity.player.Animation;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityEventType;
 import org.cloudburstmc.protocol.bedrock.packet.AnimatePacket;
 import org.jetbrains.annotations.NotNull;
@@ -21,11 +22,11 @@ public class LivingJavaEntityInstance<T extends LivingBedrockEntityInstance> ext
 	protected void onMetadataFieldChanged(@NotNull EntityMetadata<?, ? extends MetadataType<?>> metadata)
 	{
 		super.onMetadataFieldChanged(metadata);
-		getMetadataField(metadata, 8, MetadataType.BYTE, value ->
+		getMetadataField(metadata, 8, MetadataTypes.BYTE, value ->
 		{
 			this.bedrockEntityInstance.usingItem = (value & 0x01) != 0;
 		});
-		getMetadataField(metadata, 9, MetadataType.FLOAT, value ->
+		getMetadataField(metadata, 9, MetadataTypes.FLOAT, value ->
 		{
 			this.bedrockEntityInstance.health = value;
 		});
@@ -39,11 +40,11 @@ public class LivingJavaEntityInstance<T extends LivingBedrockEntityInstance> ext
 		{
 			switch ((AttributeType.Builtin) attribute.getType())
 			{
-				case GENERIC_MAX_HEALTH ->
+				case MAX_HEALTH ->
 				{
 					this.bedrockEntityInstance.maxHealth = (float) getAttributeValueWithModifiers(attribute);
 				}
-				case GENERIC_MOVEMENT_SPEED, GENERIC_FLYING_SPEED ->
+				case MOVEMENT_SPEED, FLYING_SPEED ->
 				{
 					this.bedrockEntityInstance.movementSpeed = (float) getAttributeValueWithModifiers(attribute);
 				}

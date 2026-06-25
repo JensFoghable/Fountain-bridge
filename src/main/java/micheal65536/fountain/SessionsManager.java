@@ -1,24 +1,26 @@
 package micheal65536.fountain;
 
-import com.github.steveice10.mc.protocol.MinecraftProtocol;
-import com.github.steveice10.mc.protocol.codec.MinecraftCodec;
-import com.github.steveice10.mc.protocol.codec.MinecraftCodecHelper;
-import com.github.steveice10.mc.protocol.codec.MinecraftPacketSerializer;
-import com.github.steveice10.mc.protocol.codec.PacketCodec;
-import com.github.steveice10.mc.protocol.codec.PacketStateCodec;
-import com.github.steveice10.mc.protocol.data.ProtocolState;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.entity.ClientboundRemoveMobEffectPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.entity.ClientboundUpdateMobEffectPacket;
-import com.github.steveice10.mc.auth.data.GameProfile;
-import com.github.steveice10.mc.protocol.data.game.PlayerListEntry;
-import com.github.steveice10.mc.protocol.data.game.PlayerListEntryAction;
-import com.github.steveice10.mc.protocol.data.game.entity.player.GameMode;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.ClientboundPlayerInfoUpdatePacket;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.entity.spawn.ClientboundAddEntityPacket;
-import com.github.steveice10.packetlib.codec.PacketDefinition;
-import com.github.steveice10.packetlib.packet.Packet;
-import com.github.steveice10.packetlib.packet.PacketProtocol;
-import com.github.steveice10.packetlib.tcp.TcpClientSession;
+import org.geysermc.mcprotocollib.protocol.MinecraftProtocol;
+import org.geysermc.mcprotocollib.protocol.codec.MinecraftCodec;
+import org.geysermc.mcprotocollib.protocol.codec.MinecraftPacketSerializer;
+import org.geysermc.mcprotocollib.protocol.codec.MinecraftTypes;
+import org.geysermc.mcprotocollib.protocol.codec.PacketCodec;
+import org.geysermc.mcprotocollib.protocol.data.ProtocolState;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.ClientboundRemoveMobEffectPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.ClientboundUpdateMobEffectPacket;
+import org.geysermc.mcprotocollib.auth.GameProfile;
+import org.geysermc.mcprotocollib.protocol.data.game.PlayerListEntry;
+import org.geysermc.mcprotocollib.protocol.data.game.PlayerListEntryAction;
+import org.geysermc.mcprotocollib.protocol.data.game.entity.player.GameMode;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.ClientboundPlayerInfoUpdatePacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.ClientboundAddEntityPacket;
+import org.geysermc.mcprotocollib.network.codec.PacketDefinition;
+import org.geysermc.mcprotocollib.network.packet.Packet;
+import org.geysermc.mcprotocollib.network.packet.PacketRegistry;
+import org.geysermc.mcprotocollib.protocol.codec.MinecraftPacketRegistry;
+import org.geysermc.mcprotocollib.network.packet.PacketProtocol;
+import org.geysermc.mcprotocollib.network.ClientSession;
+import org.geysermc.mcprotocollib.network.factory.ClientNetworkSessionFactory;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import org.apache.logging.log4j.LogManager;
 import org.cloudburstmc.protocol.bedrock.BedrockServerSession;
@@ -138,7 +140,10 @@ public class SessionsManager
 		LogManager.getLogger().info("Player logged in {} {}", loginInfo.username, loginInfo.uuid);
 
 		MinecraftProtocol javaProtocol = new MinecraftProtocol(MINECRAFT_CODEC_WITH_CUSTOM_ENTITY_SUPPORT, this.useUUIDAsUsername ? loginInfo.uuid : loginInfo.username);
-		TcpClientSession tcpClientSession = new TcpClientSession(this.serverAddress, this.serverPort, javaProtocol);
+		ClientSession tcpClientSession = ClientNetworkSessionFactory.factory()
+				.setAddress(this.serverAddress, this.serverPort)
+				.setProtocol(javaProtocol)
+				.create();
 
 		PlayerSession playerSession = new PlayerSession(loginBedrockPacketHandler.bedrockServerSession, tcpClientSession, new PlayerConnectorPluginWrapper(this.connectorPlugin, loginInfo.uuid), this::onSessionClosed);
 		this.activeSessions.add(new ActiveSession(loginInfo.uuid, playerSession, loginBedrockPacketHandler.bedrockServerSession));
@@ -354,31 +359,41 @@ public class SessionsManager
 		{
 			PacketCodec.Builder packetCodecBuilder = MinecraftCodec.CODEC.toBuilder();
 
-			// this ugly mess is to allow replacing existing packets with our custom subclasses that allow for non-vanilla IDs/content
+			// Get base GAME registry from original codec to find packet IDs
+			PacketRegistry originalGameRegistry = MinecraftCodec.CODEC.getCodec(ProtocolState.GAME);
+
+			// Use reflection to modify the stateProtocols map directly (same approach as original code)
 			Field stateProtocolsField = PacketCodec.Builder.class.getDeclaredField("stateProtocols");
 			stateProtocolsField.setAccessible(true);
-			EnumMap<ProtocolState, PacketStateCodec> stateProtocols = (EnumMap<ProtocolState, PacketStateCodec>) stateProtocolsField.get(packetCodecBuilder);
-			PacketStateCodec packetStateCodec = stateProtocols.get(ProtocolState.GAME);
-			Field clientboundField = PacketProtocol.class.getDeclaredField("clientbound");
-			Field clientboundIdsField = PacketProtocol.class.getDeclaredField("clientboundIds");
+			EnumMap<ProtocolState, PacketRegistry> stateProtocols = (EnumMap<ProtocolState, PacketRegistry>) stateProtocolsField.get(packetCodecBuilder);
+			
+			// Get the existing GAME registry and modify its clientbound map via reflection
+			PacketRegistry gameRegistry = stateProtocols.get(ProtocolState.GAME);
+			
+			Field clientboundField = PacketRegistry.class.getDeclaredField("clientbound");
+			Field clientboundIdsField = PacketRegistry.class.getDeclaredField("clientboundIds");
 			clientboundField.setAccessible(true);
 			clientboundIdsField.setAccessible(true);
-			Int2ObjectMap<PacketDefinition<? extends Packet, ?>> clientbound = (Int2ObjectMap<PacketDefinition<? extends Packet, ?>>) clientboundField.get(packetStateCodec);
-			Map<Class<? extends Packet>, Integer> clientboundIds = (Map<Class<? extends Packet>, Integer>) clientboundIdsField.get(packetStateCodec);
+			Int2ObjectMap<PacketDefinition<? extends Packet>> clientbound = (Int2ObjectMap<PacketDefinition<? extends Packet>>) clientboundField.get(gameRegistry);
+			Map<Class<? extends Packet>, Integer> clientboundIds = (Map<Class<? extends Packet>, Integer>) clientboundIdsField.get(gameRegistry);
 
-			int id = clientboundIds.get(ClientboundAddEntityPacket.class);
+			// Replace ClientboundAddEntityPacket
+			int id = originalGameRegistry.getClientboundId(ClientboundAddEntityPacket.class);
 			clientbound.put(id, new PacketDefinition<>(id, ClientboundAddEntityCustomPacket.class, new MinecraftPacketSerializer<>(ClientboundAddEntityCustomPacket::read)));
 			clientboundIds.put(ClientboundAddEntityCustomPacket.class, id);
 
-			id = clientboundIds.get(ClientboundUpdateMobEffectPacket.class);
+			// Replace ClientboundUpdateMobEffectPacket
+			id = originalGameRegistry.getClientboundId(ClientboundUpdateMobEffectPacket.class);
 			clientbound.put(id, new PacketDefinition<>(id, ClientboundUpdateMobEffectCustomPacket.class, new MinecraftPacketSerializer<>(ClientboundUpdateMobEffectCustomPacket::read)));
 			clientboundIds.put(ClientboundUpdateMobEffectCustomPacket.class, id);
 
-			id = clientboundIds.get(ClientboundRemoveMobEffectPacket.class);
+			// Replace ClientboundRemoveMobEffectPacket
+			id = originalGameRegistry.getClientboundId(ClientboundRemoveMobEffectPacket.class);
 			clientbound.put(id, new PacketDefinition<>(id, ClientboundRemoveMobEffectCustomPacket.class, new MinecraftPacketSerializer<>(ClientboundRemoveMobEffectCustomPacket::read)));
 			clientboundIds.put(ClientboundRemoveMobEffectCustomPacket.class, id);
 
-			id = clientboundIds.get(ClientboundPlayerInfoUpdatePacket.class);
+			// Replace ClientboundPlayerInfoUpdatePacket
+			id = originalGameRegistry.getClientboundId(ClientboundPlayerInfoUpdatePacket.class);
 			clientbound.put(id, new PacketDefinition<>(id, ClientboundPlayerInfoUpdatePacket.class, new MinecraftPacketSerializer<>(SessionsManager::readClientboundPlayerInfoUpdatePacket)));
 			clientboundIds.put(ClientboundPlayerInfoUpdatePacket.class, id);
 
@@ -390,14 +405,14 @@ public class SessionsManager
 		}
 	}
 
-	private static ClientboundPlayerInfoUpdatePacket readClientboundPlayerInfoUpdatePacket(ByteBuf in, MinecraftCodecHelper helper) throws IOException
+	private static ClientboundPlayerInfoUpdatePacket readClientboundPlayerInfoUpdatePacket(ByteBuf in)
 	{
-		EnumSet<PlayerListEntryAction> actions = helper.readEnumSet(in, PlayerListEntryAction.VALUES);
-		PlayerListEntry[] entries = new PlayerListEntry[helper.readVarInt(in)];
+		EnumSet<PlayerListEntryAction> actions = MinecraftTypes.readEnumSet(in, PlayerListEntryAction.class);
+		PlayerListEntry[] entries = new PlayerListEntry[MinecraftTypes.readVarInt(in)];
 
 		for (int index = 0; index < entries.length; index++)
 		{
-			PlayerListEntry entry = new PlayerListEntry(helper.readUUID(in));
+			PlayerListEntry entry = new PlayerListEntry(MinecraftTypes.readUUID(in));
 
 			for (PlayerListEntryAction action : actions)
 			{
@@ -405,12 +420,12 @@ public class SessionsManager
 				{
 					case ADD_PLAYER ->
 					{
-						GameProfile profile = new GameProfile(entry.getProfileId(), helper.readString(in, 36));
-						int propertyCount = helper.readVarInt(in);
+						GameProfile profile = new GameProfile(entry.getProfileId(), MinecraftTypes.readString(in, 36));
+						int propertyCount = MinecraftTypes.readVarInt(in);
 						List<GameProfile.Property> properties = new ArrayList<>();
 						for (int propertyIndex = 0; propertyIndex < propertyCount; propertyIndex++)
 						{
-							properties.add(helper.readProperty(in));
+							properties.add(MinecraftTypes.readProperty(in));
 						}
 						profile.setProperties(properties);
 						entry.setProfile(profile);
@@ -419,25 +434,25 @@ public class SessionsManager
 					{
 						if (in.readBoolean())
 						{
-							entry.setSessionId(helper.readUUID(in));
+							entry.setSessionId(MinecraftTypes.readUUID(in));
 							entry.setExpiresAt(in.readLong());
-							byte[] keySignature = helper.readByteArray(in);
+							byte[] keySignature = MinecraftTypes.readByteArray(in);
 							try
 							{
 								KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-								entry.setPublicKey(keyFactory.generatePublic(new X509EncodedKeySpec(helper.readByteArray(in))));
+								entry.setPublicKey(keyFactory.generatePublic(new X509EncodedKeySpec(MinecraftTypes.readByteArray(in))));
 							}
 							catch (GeneralSecurityException exception)
 							{
-								throw new IOException("Could not decode public key.", exception);
+								throw new RuntimeException("Could not decode public key.", exception);
 							}
 							entry.setKeySignature(keySignature);
 						}
 					}
-					case UPDATE_GAME_MODE -> entry.setGameMode(GameMode.byId(helper.readVarInt(in)));
+					case UPDATE_GAME_MODE -> entry.setGameMode(GameMode.byId(MinecraftTypes.readVarInt(in)));
 					case UPDATE_LISTED -> entry.setListed(in.readBoolean());
-					case UPDATE_LATENCY -> entry.setLatency(helper.readVarInt(in));
-					case UPDATE_DISPLAY_NAME -> entry.setDisplayName(helper.readNullable(in, helper::readComponent));
+					case UPDATE_LATENCY -> entry.setLatency(MinecraftTypes.readVarInt(in));
+					case UPDATE_DISPLAY_NAME -> entry.setDisplayName(MinecraftTypes.readNullable(in, MinecraftTypes::readComponent));
 				}
 			}
 

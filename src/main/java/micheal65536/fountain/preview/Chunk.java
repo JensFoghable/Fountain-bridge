@@ -1,13 +1,14 @@
 package micheal65536.fountain.preview;
 
-import com.github.steveice10.mc.protocol.data.game.level.block.BlockEntityInfo;
-import com.github.steveice10.mc.protocol.data.game.level.block.BlockEntityType;
+import org.geysermc.mcprotocollib.protocol.data.game.level.block.BlockEntityInfo;
+import org.geysermc.mcprotocollib.protocol.data.game.level.block.BlockEntityType;
 import com.github.steveice10.opennbt.tag.builtin.CompoundTag;
 import com.github.steveice10.opennbt.tag.builtin.IntTag;
 import com.github.steveice10.opennbt.tag.builtin.ListTag;
 import com.github.steveice10.opennbt.tag.builtin.LongArrayTag;
 import com.github.steveice10.opennbt.tag.builtin.StringTag;
 import com.github.steveice10.opennbt.tag.builtin.Tag;
+import com.github.steveice10.opennbt.NBTIO;
 import org.apache.logging.log4j.LogManager;
 import org.cloudburstmc.nbt.NbtMap;
 import org.jetbrains.annotations.NotNull;
@@ -136,7 +137,8 @@ class Chunk
 			int y = ((IntTag) blockEntityCompoundTag.get("y")).getValue();
 			int z = getChunkBlockOffset(((IntTag) blockEntityCompoundTag.get("z")).getValue());
 			String type = ((StringTag) blockEntityCompoundTag.get("id")).getValue();
-			BlockEntityInfo blockEntityInfo = new BlockEntityInfo(x, y, z, BlockEntityType.FURNACE, blockEntityCompoundTag);    // TODO: use proper type (currently this doesn't matter for any of our translator implementations)
+			NbtMap blockEntityNbtMap = convertCompoundTagToNbtMap(blockEntityCompoundTag);
+			BlockEntityInfo blockEntityInfo = new BlockEntityInfo(x, y, z, BlockEntityType.FURNACE, blockEntityNbtMap);    // TODO: use proper type (currently this doesn't matter for any of our translator implementations)
 
 			JavaBlocks.BedrockMapping.BlockEntity blockEntityMapping = blockEntityMappings[(x * 256 + y) * 16 + z];
 			if (blockEntityMapping == null)
@@ -214,5 +216,28 @@ class Chunk
 	private static int getChunkBlockOffset(int pos)
 	{
 		return pos >= 0 ? pos % 16 : 15 - ((-pos - 1) % 16);
+	}
+
+	/**
+	 * Convert an old-style opennbt CompoundTag to cloudburst NbtMap.
+	 * Uses byte-level serialization as a bridge.
+	 */
+	private static NbtMap convertCompoundTagToNbtMap(CompoundTag tag)
+	{
+		try
+		{
+			java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+			NBTIO.writeTag(baos, tag);
+			byte[] bytes = baos.toByteArray();
+			try (org.cloudburstmc.nbt.NBTInputStream in = org.cloudburstmc.nbt.NbtUtils.createReader(new java.io.ByteArrayInputStream(bytes)))
+			{
+				return (NbtMap) in.readTag();
+			}
+		}
+		catch (Exception e)
+		{
+			LogManager.getLogger().warn("Failed to convert CompoundTag to NbtMap", e);
+			return NbtMap.builder().build();
+		}
 	}
 }

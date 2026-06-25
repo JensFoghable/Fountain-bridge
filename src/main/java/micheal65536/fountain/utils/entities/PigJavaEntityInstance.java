@@ -1,7 +1,8 @@
 package micheal65536.fountain.utils.entities;
 
-import com.github.steveice10.mc.protocol.data.game.entity.metadata.EntityMetadata;
-import com.github.steveice10.mc.protocol.data.game.entity.metadata.MetadataType;
+import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.EntityMetadata;
+import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.MetadataTypes;
+import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.MetadataType;
 import org.jetbrains.annotations.NotNull;
 
 public class PigJavaEntityInstance<T extends PigBedrockEntityInstance> extends AgeableJavaEntityInstance<T>
@@ -15,7 +16,7 @@ public class PigJavaEntityInstance<T extends PigBedrockEntityInstance> extends A
 	protected void onMetadataFieldChanged(@NotNull EntityMetadata<?, ? extends MetadataType<?>> metadata)
 	{
 		super.onMetadataFieldChanged(metadata);
-		getMetadataField(metadata, 17, MetadataType.BOOLEAN, value ->
+		getMetadataField(metadata, 17, MetadataTypes.BOOLEAN, value ->
 		{
 			this.bedrockEntityInstance.saddled = value;
 		});

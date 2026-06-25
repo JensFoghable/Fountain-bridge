@@ -1,81 +1,63 @@
 package micheal65536.fountain;
 
-import com.github.steveice10.mc.protocol.codec.MinecraftCodecHelper;
-import com.github.steveice10.mc.protocol.data.game.entity.Effect;
-import com.github.steveice10.mc.protocol.data.game.level.event.LevelEventType;
-import com.github.steveice10.mc.protocol.data.game.level.sound.BuiltinSound;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.entity.ClientboundRemoveMobEffectPacket;
+import org.geysermc.mcprotocollib.protocol.codec.MinecraftPacket;
+import org.geysermc.mcprotocollib.protocol.codec.MinecraftTypes;
+import org.geysermc.mcprotocollib.protocol.data.game.entity.Effect;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.ClientboundRemoveMobEffectPacket;
 import io.netty.buffer.ByteBuf;
-import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
-import java.lang.reflect.Field;
-import java.util.Map;
 
-public class ClientboundRemoveMobEffectCustomPacket extends ClientboundRemoveMobEffectPacket
+/**
+ * Custom packet that intercepts ClientboundRemoveMobEffectPacket to handle
+ * effect IDs beyond the vanilla range (custom modded effects).
+ */
+public class ClientboundRemoveMobEffectCustomPacket implements MinecraftPacket
 {
-	public static ClientboundRemoveMobEffectCustomPacket read(ByteBuf in, MinecraftCodecHelper helper) throws IOException
+	public static ClientboundRemoveMobEffectCustomPacket read(ByteBuf in) 
 	{
-		ByteBuf byteBuf = in.duplicate();
-		helper.readVarInt(byteBuf);
-		int effectId = helper.readVarInt(byteBuf);
+		int mark = in.readerIndex();
+		int entityId = MinecraftTypes.readVarInt(in);
+		int effectId = MinecraftTypes.readVarInt(in);
+
 		if (effectId >= Effect.values().length)
 		{
-			Int2ObjectMap<LevelEventType> levelEvents;
-			Map<String, BuiltinSound> soundNames;
-			try
-			{
-				Field levelEventsField = MinecraftCodecHelper.class.getDeclaredField("levelEvents");
-				Field soundNamesField = MinecraftCodecHelper.class.getDeclaredField("soundNames");
-				levelEventsField.setAccessible(true);
-				soundNamesField.setAccessible(true);
-				levelEvents = (Int2ObjectMap<LevelEventType>) levelEventsField.get(helper);
-				soundNames = (Map<String, BuiltinSound>) soundNamesField.get(helper);
-			}
-			catch (Exception exception)
-			{
-				throw new AssertionError(exception);
-			}
-			return new ClientboundRemoveMobEffectCustomPacket(effectId, false, in, new MinecraftCodecHelper(levelEvents, soundNames)
-			{
-				private int varIntCounter = 0;
-
-				@Override
-				public int readVarInt(ByteBuf buf)
-				{
-					if (this.varIntCounter++ == 1)
-					{
-						super.readVarInt(buf);
-						return 0;
-					}
-					else
-					{
-						return super.readVarInt(buf);
-					}
-				}
-			});
+			return new ClientboundRemoveMobEffectCustomPacket(entityId, effectId, false);
 		}
 		else
 		{
-			return new ClientboundRemoveMobEffectCustomPacket(effectId, true, in, helper);
+			in.readerIndex(mark);
+			return null;
 		}
 	}
 
+	public final int entityId;
 	public final int effectId;
 	private final boolean hasVanillaEffect;
 
-	private ClientboundRemoveMobEffectCustomPacket(int effectId, boolean hasVanillaEffect, ByteBuf in, MinecraftCodecHelper helper) throws IOException
+	private ClientboundRemoveMobEffectCustomPacket(int entityId, int effectId, boolean hasVanillaEffect)
 	{
-		super(in, helper);
+		this.entityId = entityId;
 		this.effectId = effectId;
 		this.hasVanillaEffect = hasVanillaEffect;
 	}
 
-	@Override
 	@Nullable
 	public Effect getEffect()
 	{
-		return this.hasVanillaEffect ? super.getEffect() : null;
+		return hasVanillaEffect ? Effect.values()[this.effectId] : null;
+	}
+
+	@Override
+	public void serialize(ByteBuf buf)
+	{
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public boolean shouldRunOnGameThread()
+	{
+		return true;
 	}
 }

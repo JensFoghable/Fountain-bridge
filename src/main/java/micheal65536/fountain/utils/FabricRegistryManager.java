@@ -1,7 +1,7 @@
 package micheal65536.fountain.utils;
 
-import com.github.steveice10.mc.protocol.codec.MinecraftCodecHelper;
-import com.github.steveice10.mc.protocol.packet.common.serverbound.ServerboundCustomPayloadPacket;
+import org.geysermc.mcprotocollib.protocol.codec.MinecraftCodecHelper;
+import org.geysermc.mcprotocollib.protocol.packet.common.serverbound.ServerboundCustomPayloadPacket;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.apache.logging.log4j.LogManager;
@@ -38,7 +38,7 @@ public class FabricRegistryManager
 	public void enableRegistrySyncChannel()
 	{
 		LogManager.getLogger().debug("Enabling Fabric registry sync");
-		this.playerSession.sendJavaPacket(new ServerboundCustomPayloadPacket("minecraft:register", "fabric:registry/sync/direct".getBytes(StandardCharsets.US_ASCII)));
+		this.playerSession.sendJavaPacket(new ServerboundCustomPayloadPacket(net.kyori.adventure.key.Key.key("minecraft:register"), "fabric:registry/sync/direct".getBytes(StandardCharsets.US_ASCII)));
 	}
 
 	public boolean handleRegistrySyncData(byte[] data)
@@ -134,7 +134,7 @@ public class FabricRegistryManager
 			}
 
 			LogManager.getLogger().debug("Finished Fabric registry sync");
-			this.playerSession.sendJavaPacket(new ServerboundCustomPayloadPacket("fabric:registry/sync/complete", new byte[0]));
+			this.playerSession.sendJavaPacket(new ServerboundCustomPayloadPacket(net.kyori.adventure.key.Key.key("fabric:registry/sync/complete"), new byte[0]));
 
 			return true;
 		}

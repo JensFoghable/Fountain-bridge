@@ -1,48 +1,50 @@
 package micheal65536.fountain;
 
-import com.github.steveice10.mc.protocol.codec.MinecraftCodecHelper;
-import com.github.steveice10.mc.protocol.codec.MinecraftPacket;
-import com.github.steveice10.mc.protocol.data.game.ClientCommand;
-import com.github.steveice10.mc.protocol.data.game.entity.EntityEvent;
-import com.github.steveice10.mc.protocol.data.game.entity.attribute.Attribute;
-import com.github.steveice10.mc.protocol.data.game.entity.metadata.EntityMetadata;
-import com.github.steveice10.mc.protocol.data.game.entity.metadata.Equipment;
-import com.github.steveice10.mc.protocol.data.game.entity.metadata.ItemStack;
-import com.github.steveice10.mc.protocol.data.game.entity.object.Direction;
-import com.github.steveice10.mc.protocol.data.game.entity.player.Animation;
-import com.github.steveice10.mc.protocol.data.game.entity.player.GameMode;
-import com.github.steveice10.mc.protocol.data.game.entity.player.Hand;
-import com.github.steveice10.mc.protocol.data.game.entity.player.HandPreference;
-import com.github.steveice10.mc.protocol.data.game.entity.player.PlayerAction;
-import com.github.steveice10.mc.protocol.data.game.level.block.BlockChangeEntry;
-import com.github.steveice10.mc.protocol.data.game.level.event.LevelEvent;
-import com.github.steveice10.mc.protocol.data.game.level.event.LevelEventData;
-import com.github.steveice10.mc.protocol.data.game.level.event.LevelEventType;
-import com.github.steveice10.mc.protocol.data.game.level.particle.Particle;
-import com.github.steveice10.mc.protocol.data.game.level.sound.Sound;
-import com.github.steveice10.mc.protocol.data.game.setting.ChatVisibility;
-import com.github.steveice10.mc.protocol.data.game.setting.Difficulty;
-import com.github.steveice10.mc.protocol.data.game.setting.SkinPart;
-import com.github.steveice10.mc.protocol.packet.common.serverbound.ServerboundClientInformationPacket;
-import com.github.steveice10.mc.protocol.packet.common.serverbound.ServerboundCustomPayloadPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.ClientboundLoginPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.entity.ClientboundTakeItemEntityPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.inventory.ClientboundContainerSetContentPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.inventory.ClientboundContainerSetSlotPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.level.ClientboundBlockEntityDataPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.level.ClientboundBlockEventPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.level.ClientboundLevelChunkWithLightPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.serverbound.ServerboundClientCommandPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.serverbound.player.ServerboundPlayerActionPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.serverbound.player.ServerboundSetCarriedItemPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.serverbound.player.ServerboundUseItemOnPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.serverbound.player.ServerboundUseItemPacket;
+import org.geysermc.mcprotocollib.protocol.codec.MinecraftCodecHelper;
+import org.geysermc.mcprotocollib.protocol.codec.MinecraftPacket;
+import org.geysermc.mcprotocollib.protocol.data.game.ClientCommand;
+import org.geysermc.mcprotocollib.protocol.data.game.entity.EntityEvent;
+import org.geysermc.mcprotocollib.protocol.data.game.entity.attribute.Attribute;
+import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.EntityMetadata;
+import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.Equipment;
+import org.geysermc.mcprotocollib.protocol.data.game.item.ItemStack;
+import org.geysermc.mcprotocollib.protocol.data.game.entity.object.Direction;
+import org.geysermc.mcprotocollib.protocol.data.game.entity.player.Animation;
+import org.geysermc.mcprotocollib.protocol.data.game.entity.player.GameMode;
+import org.geysermc.mcprotocollib.protocol.data.game.setting.ParticleStatus;
+import org.geysermc.mcprotocollib.protocol.data.game.entity.player.Hand;
+import org.geysermc.mcprotocollib.protocol.data.game.entity.player.HandPreference;
+import org.geysermc.mcprotocollib.protocol.data.game.entity.player.PlayerAction;
+import org.geysermc.mcprotocollib.protocol.data.game.level.block.BlockChangeEntry;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import org.geysermc.mcprotocollib.protocol.data.game.level.event.LevelEvent;
+import org.geysermc.mcprotocollib.protocol.data.game.level.event.LevelEventData;
+import org.geysermc.mcprotocollib.protocol.data.game.level.event.LevelEventType;
+import org.geysermc.mcprotocollib.protocol.data.game.level.particle.Particle;
+import org.geysermc.mcprotocollib.protocol.data.game.level.sound.Sound;
+import org.geysermc.mcprotocollib.protocol.data.game.setting.ChatVisibility;
+import org.geysermc.mcprotocollib.protocol.data.game.setting.Difficulty;
+import org.geysermc.mcprotocollib.protocol.data.game.setting.SkinPart;
+import org.geysermc.mcprotocollib.protocol.packet.common.serverbound.ServerboundClientInformationPacket;
+import org.geysermc.mcprotocollib.protocol.packet.common.serverbound.ServerboundCustomPayloadPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.ClientboundLoginPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.ClientboundTakeItemEntityPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.inventory.ClientboundContainerSetContentPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.inventory.ClientboundContainerSetSlotPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.ClientboundBlockEntityDataPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.ClientboundBlockEventPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.ClientboundLevelChunkWithLightPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.ServerboundClientCommandPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.player.ServerboundPlayerActionPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.player.ServerboundSetCarriedItemPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.player.ServerboundUseItemOnPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.player.ServerboundUseItemPacket;
 import com.github.steveice10.opennbt.tag.builtin.CompoundTag;
 import com.github.steveice10.opennbt.tag.builtin.IntTag;
 import com.github.steveice10.opennbt.tag.builtin.ListTag;
 import com.github.steveice10.opennbt.tag.builtin.StringTag;
 import com.github.steveice10.opennbt.tag.builtin.Tag;
-import com.github.steveice10.packetlib.tcp.TcpClientSession;
+import org.geysermc.mcprotocollib.network.ClientSession;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.Unpooled;
@@ -104,6 +106,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
+import org.geysermc.mcprotocollib.protocol.codec.MinecraftTypes;
 
 public final class PlayerSession
 {
@@ -114,6 +117,7 @@ public final class PlayerSession
 	private static final int JAVA_MAIN_INVENTORY_OFFSET = 9;
 	private static final int JAVA_HOTBAR_OFFSET = JAVA_MAIN_INVENTORY_OFFSET + 27;
 
+	private final MinecraftCodecHelper codecHelper;
 	private final FabricRegistryManager fabricRegistryManager;
 	private final InventoryManager inventoryManager;
 	private final ChunkManager chunkManager;
@@ -126,7 +130,7 @@ public final class PlayerSession
 	private boolean bedrockDoDaylightCycle = true;
 	private int bedrockSelectedHotbarSlot = 0;
 
-	private final TcpClientSession java;
+	private final ClientSession java;
 	private final HashMap<Integer, String> javaBiomes = new HashMap<>();
 	private LocalPlayerJavaEntityInstance javaPlayerEntityInstance;
 
@@ -136,15 +140,16 @@ public final class PlayerSession
 
 	final ReentrantLock mutex = new ReentrantLock(true);
 
-	public PlayerSession(@NotNull BedrockSession bedrockSession, @NotNull TcpClientSession javaSession, @NotNull PlayerConnectorPluginWrapper playerConnectorPluginWrapper, @NotNull Consumer<PlayerSession> disconnectCallback)
+	public PlayerSession(@NotNull BedrockSession bedrockSession, @NotNull ClientSession javaSession, @NotNull PlayerConnectorPluginWrapper playerConnectorPluginWrapper, @NotNull Consumer<PlayerSession> disconnectCallback)
 	{
 		this.bedrock = bedrockSession;
 		this.java = javaSession;
 		this.playerConnectorPluginWrapper = playerConnectorPluginWrapper;
 		this.disconnectCallback = disconnectCallback;
 
-		this.fabricRegistryManager = new FabricRegistryManager(this, (MinecraftCodecHelper) this.java.getCodecHelper());
-		this.inventoryManager = new InventoryManager(this, this.fabricRegistryManager, (MinecraftCodecHelper) this.java.getCodecHelper(), this.playerConnectorPluginWrapper);
+		this.codecHelper = new MinecraftCodecHelper(new it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap<>(), new java.util.HashMap<>());
+		this.fabricRegistryManager = new FabricRegistryManager(this, this.codecHelper);
+		this.inventoryManager = new InventoryManager(this, this.fabricRegistryManager, this.codecHelper, this.playerConnectorPluginWrapper);
 		this.chunkManager = new ChunkManager(MAX_NONEMPTY_CHUNK_RADIUS, this, this.fabricRegistryManager);
 		this.entityManager = new EntityManager(this);
 		this.effectManager = new EffectManager(this);
@@ -335,14 +340,14 @@ public final class PlayerSession
 			}
 		}
 
-		ServerboundClientInformationPacket serverboundClientInformationPacket = new ServerboundClientInformationPacket("en_GB", HARDCODED_CHUNK_RADIUS, ChatVisibility.FULL, true, Arrays.asList(SkinPart.values()), HandPreference.RIGHT_HAND, false, true);
+		ServerboundClientInformationPacket serverboundClientInformationPacket = new ServerboundClientInformationPacket("en_GB", HARDCODED_CHUNK_RADIUS, ChatVisibility.FULL, true, Arrays.asList(SkinPart.values()), HandPreference.RIGHT_HAND, false, true, ParticleStatus.ALL);
 		this.sendJavaPacket(serverboundClientInformationPacket);
 
 		ByteBuf byteBuf = ByteBufAllocator.DEFAULT.buffer();
 		byteBuf.writeBoolean(true);
 		byte[] data = new byte[byteBuf.readableBytes()];
 		byteBuf.readBytes(data);
-		ServerboundCustomPayloadPacket serverboundCustomPayloadPacket = new ServerboundCustomPayloadPacket("fountain:earth_mode", data);
+		ServerboundCustomPayloadPacket serverboundCustomPayloadPacket = new ServerboundCustomPayloadPacket(net.kyori.adventure.key.Key.key("fountain:earth_mode"), data);
 		this.sendJavaPacket(serverboundCustomPayloadPacket);
 
 		this.inventoryManager.initialiseServerInventory();
@@ -392,14 +397,13 @@ public final class PlayerSession
 		this.sendBedrockPacket(setPlayerGameTypePacket);
 	}
 
-	public void loadJavaBiomes(ListTag biomesListTag)
+	public void loadJavaBiomes(java.util.List<org.cloudburstmc.nbt.NbtMap> biomesList)
 	{
 		this.javaBiomes.clear();
-		for (Tag tag : biomesListTag)
+		for (org.cloudburstmc.nbt.NbtMap compound : biomesList)
 		{
-			CompoundTag compoundTag = (CompoundTag) tag;
-			int id = ((IntTag) compoundTag.get("id")).getValue();
-			String name = ((StringTag) compoundTag.get("name")).getValue();
+			int id = compound.getInt("id");
+			String name = compound.getString("name");
 			this.javaBiomes.put(id, name);
 		}
 	}
@@ -411,7 +415,7 @@ public final class PlayerSession
 
 	public void onJavaLevelChunk(@NotNull ClientboundLevelChunkWithLightPacket clientboundLevelChunkWithLightPacket)
 	{
-		this.chunkManager.onJavaLevelChunk(clientboundLevelChunkWithLightPacket, this.javaBiomes, (MinecraftCodecHelper) this.java.getCodecHelper());
+		this.chunkManager.onJavaLevelChunk(clientboundLevelChunkWithLightPacket, this.javaBiomes, this.codecHelper);
 	}
 
 	public void onJavaBlockUpdate(@NotNull BlockChangeEntry blockChangeEntry)
@@ -459,7 +463,7 @@ public final class PlayerSession
 
 		entityInstance.setInitialPosition(
 				Vector3f.from(clientboundAddEntityPacket.getX(), clientboundAddEntityPacket.getY(), clientboundAddEntityPacket.getZ()),
-				Vector3f.from(clientboundAddEntityPacket.getMotionX(), clientboundAddEntityPacket.getMotionY(), clientboundAddEntityPacket.getMotionZ()),
+				Vector3f.from(clientboundAddEntityPacket.getMovement().getX(), clientboundAddEntityPacket.getMovement().getY(), clientboundAddEntityPacket.getMovement().getZ()),
 				true,
 				clientboundAddEntityPacket.getYaw(),
 				clientboundAddEntityPacket.getPitch(),
@@ -769,12 +773,12 @@ public final class PlayerSession
 		{
 			if (packet.getActionType() == 0) // place/use item on block
 			{
-				ServerboundUseItemOnPacket serverboundUseItemOnPacket = new ServerboundUseItemOnPacket(packet.getBlockPosition(), Direction.VALUES[packet.getBlockFace()], Hand.MAIN_HAND, packet.getClickPosition().getX(), packet.getClickPosition().getY(), packet.getClickPosition().getZ(), false, 0);
+				ServerboundUseItemOnPacket serverboundUseItemOnPacket = new ServerboundUseItemOnPacket(packet.getBlockPosition(), Direction.VALUES[packet.getBlockFace()], Hand.MAIN_HAND, packet.getClickPosition().getX(), packet.getClickPosition().getY(), packet.getClickPosition().getZ(), false, false, 0);
 				this.sendJavaPacket(serverboundUseItemOnPacket);
 			}
 			else if (packet.getActionType() == 1) // use item
 			{
-				ServerboundUseItemPacket serverboundUseItemPacket = new ServerboundUseItemPacket(Hand.MAIN_HAND, 0);
+				ServerboundUseItemPacket serverboundUseItemPacket = new ServerboundUseItemPacket(Hand.MAIN_HAND, 0, 0.0f, 0.0f);
 				this.sendJavaPacket(serverboundUseItemPacket);
 			}
 			else if (packet.getActionType() == 2) // dig
@@ -877,7 +881,7 @@ public final class PlayerSession
 		try
 		{
 			ByteBuf buf = Unpooled.wrappedBuffer(data);
-			MinecraftCodecHelper minecraftCodecHelper = (MinecraftCodecHelper) this.java.getCodecHelper();
+			MinecraftCodecHelper minecraftCodecHelper = this.codecHelper;
 			ItemStack itemStack = minecraftCodecHelper.readItemStack(buf);
 			Vector3d pos = Vector3d.from(buf.readDouble(), buf.readDouble(), buf.readDouble());
 
@@ -891,7 +895,7 @@ public final class PlayerSession
 
 			this.sendItemParticle(bedrockMapping.id, bedrockMapping.aux, pos.toFloat(), this.javaPlayerEntityInstance.bedrockEntityInstance.getInstanceId());
 		}
-		catch (IOException | NullPointerException exception)
+		catch (NullPointerException exception)
 		{
 			LogManager.getLogger().warn("Server sent bad item pickup particle data", exception);
 		}
@@ -926,43 +930,36 @@ public final class PlayerSession
 
 	public void onJavaInventorySyncResponse(byte[] data)
 	{
-		try
+		ByteBuf buf = Unpooled.wrappedBuffer(data);
+		MinecraftCodecHelper minecraftCodecHelper = this.codecHelper;
+
+		int count = buf.readInt();
+		ItemStack[] itemStacks = new ItemStack[count];
+		for (int index = 0; index < count; index++)
 		{
-			ByteBuf buf = Unpooled.wrappedBuffer(data);
-			MinecraftCodecHelper minecraftCodecHelper = (MinecraftCodecHelper) this.java.getCodecHelper();
-
-			int count = buf.readInt();
-			ItemStack[] itemStacks = new ItemStack[count];
-			for (int index = 0; index < count; index++)
+			ItemStack itemStack = minecraftCodecHelper.readItemStack(buf);
+			if (itemStack == null)
 			{
-				ItemStack itemStack = minecraftCodecHelper.readItemStack(buf);
-				if (itemStack == null)
-				{
-					LogManager.getLogger().warn("Server sent bad inventory sync response data (null item stack)");
-					return;
-				}
-				itemStacks[index] = itemStack;
+				LogManager.getLogger().warn("Server sent bad inventory sync response data (null item stack)");
+				return;
 			}
-
-			ItemStack[] hotbar = new ItemStack[7];
-			for (int index = 0; index < 7; index++)
-			{
-				ItemStack itemStack = minecraftCodecHelper.readItemStack(buf);
-				hotbar[index] = itemStack;
-			}
-
-			this.inventoryManager.onInventorySyncResponse(itemStacks, hotbar);
+			itemStacks[index] = itemStack;
 		}
-		catch (IOException exception)
+
+		ItemStack[] hotbar = new ItemStack[7];
+		for (int index = 0; index < 7; index++)
 		{
-			LogManager.getLogger().warn("Server sent bad inventory sync response data", exception);
+			ItemStack itemStack = minecraftCodecHelper.readItemStack(buf);
+			hotbar[index] = itemStack;
 		}
+
+		this.inventoryManager.onInventorySyncResponse(itemStacks, hotbar);
 	}
 
 	public void onJavaSetHotbarResponse(byte[] data)
 	{
 		ByteBuf buf = Unpooled.wrappedBuffer(data);
-		MinecraftCodecHelper minecraftCodecHelper = (MinecraftCodecHelper) this.java.getCodecHelper();
+		MinecraftCodecHelper minecraftCodecHelper = this.codecHelper;
 		boolean success = buf.readBoolean();
 		this.inventoryManager.onSetHotbarResponse(success);
 	}
