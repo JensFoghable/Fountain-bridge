@@ -59,7 +59,6 @@ public class SessionsManager
 	private final HashSet<ClosedSessionBedrockPacketHandler> closedSessions = new HashSet<>();
 
 	// V2 dimension/instance routing
-	private final HashMap<String, Integer> instanceIdToDimensionId = new HashMap<>();
 	private final HashMap<String, ResourceLocation> instanceIdToDimensionKey = new HashMap<>();
 	private final HashMap<String, String> playerUuidToInstanceId = new HashMap<>();
 
@@ -362,38 +361,24 @@ public class SessionsManager
 
 	/**
 	 * Registers an instance mapping: maps an orchestrator-level instanceId to a
-	 * numeric dimension ID and a {@link ResourceLocation}. Called by the bridge
-	 * when it loads a dimension mapping config file, or by the connector plugin
-	 * at runtime when instances are created/destroyed.
+	 * {@link ResourceLocation} dimension key. Called by the bridge when it loads
+	 * a dimension mapping config file.
+	 *
+	 * TODO: The numeric {@code dimensionId} is intentionally not stored here. The
+	 * connector plugin's {@code bindPlayerToInstance} result is the single source of
+	 * truth for the dimension ID used during login routing; this method only maintains
+	 * the dimension key needed to build the {@code StartGamePacket}. The
+	 * {@code dimensionId} parameter is kept for API compatibility with the config file
+	 * format (Main#loadDimensionMappings forwards it to the connector plugin, which
+	 * registers it on its own side).
 	 */
 	public void updateInstanceDimensionMapping(@NotNull String instanceId, @NotNull ResourceLocation dimensionKey, int dimensionId)
 	{
 		this.lock.lock();
 		try
 		{
-			this.instanceIdToDimensionId.put(instanceId, dimensionId);
 			this.instanceIdToDimensionKey.put(instanceId, dimensionKey);
 			LogManager.getLogger().info("Updated instance mapping: instanceId={} dimensionKey={} dimensionId={}", instanceId, dimensionKey, dimensionId);
-		}
-		finally
-		{
-			this.lock.unlock();
-		}
-	}
-
-	/**
-	 * Removes a previously registered instance mapping.
-	 */
-	public void removeInstanceDimensionMapping(@NotNull String instanceId)
-	{
-		this.lock.lock();
-		try
-		{
-			this.instanceIdToDimensionId.remove(instanceId);
-			this.instanceIdToDimensionKey.remove(instanceId);
-			// Also remove any player bindings pointing to this instance
-			this.playerUuidToInstanceId.entrySet().removeIf(entry -> entry.getValue().equals(instanceId));
-			LogManager.getLogger().info("Removed instance mapping: instanceId={}", instanceId);
 		}
 		finally
 		{
@@ -412,22 +397,6 @@ public class SessionsManager
 		{
 			this.playerUuidToInstanceId.put(playerUuid, instanceId);
 			LogManager.getLogger().info("Pre-bound player {} to instance {}", playerUuid, instanceId);
-		}
-		finally
-		{
-			this.lock.unlock();
-		}
-	}
-
-	/**
-	 * Returns the dimension ID for the given instance, or -1 if not found.
-	 */
-	public int getDimensionIdForInstance(@NotNull String instanceId)
-	{
-		this.lock.lock();
-		try
-		{
-			return this.instanceIdToDimensionId.getOrDefault(instanceId, -1);
 		}
 		finally
 		{

@@ -21,6 +21,7 @@ public final class DefaultConnectorPlugin implements ConnectorPlugin
 	private final HashMap<String, GenoaInventory> playerInventories = new HashMap<>();
 	private final HashMap<String, InstanceData> instances = new HashMap<>();
 	private final HashMap<String, String> playerBindings = new HashMap<>();
+	private Logger logger;
 
 	private static class InstanceData
 	{
@@ -37,7 +38,7 @@ public final class DefaultConnectorPlugin implements ConnectorPlugin
 	@Override
 	public void init(@NotNull String arg, @NotNull Logger logger) throws ConnectorPluginException
 	{
-		// empty
+		this.logger = logger;
 	}
 
 	@Override
@@ -177,7 +178,13 @@ public final class DefaultConnectorPlugin implements ConnectorPlugin
 		InstanceData instanceData = this.instances.getOrDefault(boundInstanceId, null);
 		if (instanceData == null)
 		{
-			return CompletableFuture.completedFuture(BindPlayerResult.failure("Instance not found: " + boundInstanceId));
+			// No registered mapping for the target instance. Instead of disconnecting the player,
+			// fall back to the default instance (dimension 0, Overworld). This matches the documented
+			// behavior in docs/bridge-session-routing.md: the "default" shared instance falls back to
+			// dimension 0. Remember the binding so subsequent binds for this player resolve consistently.
+			this.logger.warn("Instance " + boundInstanceId + " not found, falling back to dimension 0");
+			this.playerBindings.put(playerId, boundInstanceId);
+			return CompletableFuture.completedFuture(BindPlayerResult.success(0));
 		}
 
 		// Store the binding for future reference

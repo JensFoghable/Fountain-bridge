@@ -97,10 +97,8 @@ mappings and player bindings before any clients connect.
 
 | Method | Description |
 |--------|-------------|
-| `updateInstanceDimensionMapping(instanceId, dimensionKey, dimensionId)` | Register an instance mapping. |
-| `removeInstanceDimensionMapping(instanceId)` | Remove an instance mapping (also clears any player bindings to it). |
+| `updateInstanceDimensionMapping(instanceId, dimensionKey, dimensionId)` | Register an instance mapping. The dimension ID is not stored here -- it is sourced from the connector plugin's `bindPlayerToInstance` result (see "Error handling"). |
 | `preBindPlayerToInstance(playerUuid, instanceId)` | Pre-bind a player UUID to an instance. |
-| `getDimensionIdForInstance(instanceId)` | Look up the numeric dimension ID for an instance. |
 | `getDimensionKeyForInstance(instanceId)` | Look up the `ResourceLocation` dimension key. |
 | `getInstanceIdForPlayer(playerUuid)` | Look up the bound instance for a player UUID. |
 
@@ -127,8 +125,10 @@ mappings and player bindings before any clients connect.
 - If the future times out (5 seconds), the player is disconnected.
 - If the connector plugin throws `ConnectorPluginException`, the player is
   disconnected.
-- If no instance mapping is found for the target instance, the player receives
-  `BindResult.failure("Instance not found: ...")` and is disconnected.
+- If the connector plugin returns `BindResult.failure(...)` for the target
+  instance, the player is disconnected. The built-in `DefaultConnectorPlugin`
+  never fails here: when no instance mapping is found for the target instance it
+  falls back to dimension 0 (Overworld) instead.
 - If no pre-binding exists and no join code is provided, the player is routed to
   `"default"` instance, which falls back to dimension 0 (Overworld).
 
