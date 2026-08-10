@@ -86,6 +86,7 @@ import org.jetbrains.annotations.Nullable;
 import micheal65536.fountain.connector.PlayerConnectorPluginWrapper;
 import micheal65536.fountain.connector.plugin.ConnectorPlugin;
 import micheal65536.fountain.connector.plugin.DisconnectResponse;
+import micheal65536.fountain.connector.plugin.ResourceLocation;
 import micheal65536.fountain.registry.EarthEntitiesRegistry;
 import micheal65536.fountain.registry.JavaItems;
 import micheal65536.fountain.utils.ChunkManager;
@@ -134,6 +135,11 @@ public final class PlayerSession
 	private final Consumer<PlayerSession> disconnectCallback;
 	private boolean disconnected = false;
 
+	// V2 instance/dimension routing
+	private String instanceId;
+	private int assignedDimensionId = 0;
+	private ResourceLocation dimensionKey;
+
 	final ReentrantLock mutex = new ReentrantLock(true);
 
 	public PlayerSession(@NotNull BedrockSession bedrockSession, @NotNull TcpClientSession javaSession, @NotNull PlayerConnectorPluginWrapper playerConnectorPluginWrapper, @NotNull Consumer<PlayerSession> disconnectCallback)
@@ -174,6 +180,38 @@ public final class PlayerSession
 			}
 		});
 		this.tickThread.start();
+	}
+
+	/**
+	 * V2 API: Assigns the player to a specific instance/dimension.
+	 * Must be called before the Java login flow completes (before StartGamePacket is sent).
+	 *
+	 * @param dimensionKey the {@link ResourceLocation} of the dimension (e.g., {@code fountain:instance_abc123})
+	 * @param dimensionId  the numeric dimension ID used in the Java protocol
+	 */
+	public void setAssignedDimension(@NotNull ResourceLocation dimensionKey, int dimensionId)
+	{
+		this.dimensionKey = dimensionKey;
+		this.assignedDimensionId = dimensionId;
+		this.instanceId = dimensionKey.path();
+		LogManager.getLogger().info("PlayerSession assigned to dimension {} (id={})", dimensionKey, dimensionId);
+	}
+
+	/**
+	 * V2 API: Returns the instance ID this player is assigned to, or null if unassigned.
+	 */
+	@Nullable
+	public String getInstanceId()
+	{
+		return this.instanceId;
+	}
+
+	/**
+	 * V2 API: Returns the numeric dimension ID this player is assigned to.
+	 */
+	public int getAssignedDimensionId()
+	{
+		return this.assignedDimensionId;
 	}
 
 	public void disconnect(boolean fromServer)
@@ -254,7 +292,7 @@ public final class PlayerSession
 		startGamePacket.setPlayerPosition(Vector3f.from(0.0f, 69.0f, 0.0f));
 		startGamePacket.setRotation(Vector2f.from(1.0f, 1.0f));
 		startGamePacket.setSeed(0);
-		startGamePacket.setDimensionId(0);
+		startGamePacket.setDimensionId(this.assignedDimensionId);
 		startGamePacket.setGeneratorId(1);
 		startGamePacket.setLevelGameType(GameType.valueOf(clientboundLoginPacket.getCommonPlayerSpawnInfo().getGameMode().name()));
 		startGamePacket.setDifficulty(1);

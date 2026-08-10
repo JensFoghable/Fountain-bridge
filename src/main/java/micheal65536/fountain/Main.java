@@ -26,6 +26,7 @@ import org.jetbrains.annotations.Nullable;
 import micheal65536.fountain.connector.ConnectorPluginLogger;
 import micheal65536.fountain.connector.DefaultConnectorPlugin;
 import micheal65536.fountain.connector.plugin.ConnectorPlugin;
+import micheal65536.fountain.connector.plugin.ResourceLocation;
 import micheal65536.fountain.mappings.DirectSounds;
 import micheal65536.fountain.registry.BedrockBiomes;
 import micheal65536.fountain.registry.BedrockBlocks;
@@ -35,7 +36,14 @@ import micheal65536.fountain.registry.EarthItemCatalog;
 import micheal65536.fountain.registry.JavaBlocks;
 import micheal65536.fountain.registry.JavaItems;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+
 import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.Reader;
 import java.lang.reflect.Constructor;
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
@@ -150,6 +158,12 @@ public class Main
 				.hasArg(false)
 				.desc("Use the player UUID as the username for the Java server")
 				.build());
+		options.addOption(Option.builder()
+				.option("dimensionMappingsFile")
+				.hasArg()
+				.argName("file")
+				.desc("JSON file containing initial instance dimension mappings and player bindings")
+				.build());
 		CommandLine commandLine;
 		int port;
 		String serverAddress;
@@ -158,6 +172,7 @@ public class Main
 		String connectorPluginClassName;
 		String connectorPluginArg;
 		boolean useUUIDAsUsername;
+		String dimensionMappingsFile;
 		try
 		{
 			commandLine = new DefaultParser().parse(options, args);
@@ -168,6 +183,7 @@ public class Main
 			connectorPluginClassName = commandLine.getOptionValue("connectorPluginClass", DefaultConnectorPlugin.class.getCanonicalName());
 			connectorPluginArg = commandLine.getOptionValue("connectorPluginArg", "");
 			useUUIDAsUsername = commandLine.hasOption("useUUIDAsUsername");
+			dimensionMappingsFile = commandLine.getOptionValue("dimensionMappingsFile", null);
 		}
 		catch (ParseException exception)
 		{
@@ -178,6 +194,8 @@ public class Main
 
 		ConnectorPlugin connectorPlugin = loadConnectorPlugin(connectorPluginJarFilename, connectorPluginClassName, connectorPluginArg);
 		SessionsManager sessionsManager = new SessionsManager(serverAddress, serverPort, connectorPlugin, useUUIDAsUsername);
+
+		loadDimensionMappings(dimensionMappingsFile, sessionsManager, connectorPlugin);
 		Runtime.getRuntime().addShutdownHook(new Thread(() ->
 		{
 			sessionsManager.shutdown();
@@ -208,6 +226,78 @@ public class Main
 				})
 				.bind(new InetSocketAddress("0.0.0.0", port))
 				.syncUninterruptibly();
+	}
+
+
+	private static void loadDimensionMappings(@Nullable String mappingsFile, @NotNull SessionsManager sessionsManager, @NotNull ConnectorPlugin connectorPlugin)
+	{
+		if (mappingsFile == null)
+		{
+			return;
+		}
+
+		File file = new File(mappingsFile);
+		if (!file.exists())
+		{
+			LogManager.getLogger().warn("Dimension mappings file does not exist: {}", mappingsFile);
+			return;
+		}
+
+		LogManager.getLogger().info("Loading dimension mappings from {}", mappingsFile);
+		try (Reader reader = new FileReader(file))
+		{
+			Gson gson = new Gson();
+			JsonObject root = gson.fromJson(reader, JsonObject.class);
+
+			// Parse instances
+			if (root.has("instances"))
+			{
+				JsonObject instances = root.getAsJsonObject("instances");
+				for (String instanceId : instances.keySet())
+				{
+					JsonObject instanceData = instances.getAsJsonObject(instanceId);
+					int dimensionId = instanceData.get("dimensionId").getAsInt();
+					String dimensionKeyStr = instanceData.get("dimensionKey").getAsString();
+					ResourceLocation dimensionKey = ResourceLocation.fromString(dimensionKeyStr);
+
+					sessionsManager.updateInstanceDimensionMapping(instanceId, dimensionKey, dimensionId);
+
+					// Also register with DefaultConnectorPlugin if in use
+					if (connectorPlugin instanceof DefaultConnectorPlugin)
+					{
+						((DefaultConnectorPlugin) connectorPlugin).registerInstanceMapping(instanceId, dimensionId, dimensionKey);
+					}
+				}
+			}
+
+			// Parse player bindings
+			if (root.has("playerBindings"))
+			{
+				JsonObject playerBindings = root.getAsJsonObject("playerBindings");
+				for (String playerUuid : playerBindings.keySet())
+				{
+					String instanceId = playerBindings.get(playerUuid).getAsString();
+
+					sessionsManager.preBindPlayerToInstance(playerUuid, instanceId);
+
+					// Also register with DefaultConnectorPlugin if in use
+					if (connectorPlugin instanceof DefaultConnectorPlugin)
+					{
+						((DefaultConnectorPlugin) connectorPlugin).preBindPlayer(playerUuid, instanceId);
+					}
+				}
+			}
+
+			LogManager.getLogger().info("Dimension mappings loaded successfully");
+		}
+		catch (IOException exception)
+		{
+			LogManager.getLogger().error("Failed to read dimension mappings file: {}", mappingsFile, exception);
+		}
+		catch (Exception exception)
+		{
+			LogManager.getLogger().error("Failed to parse dimension mappings file: {}", mappingsFile, exception);
+		}
 	}
 
 	@NotNull

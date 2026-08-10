@@ -2,9 +2,12 @@ package micheal65536.fountain.connector;
 
 import org.jetbrains.annotations.NotNull;
 
+import micheal65536.fountain.connector.plugin.BindPlayerResult;
 import micheal65536.fountain.connector.plugin.ConnectorPlugin;
 import micheal65536.fountain.connector.plugin.DisconnectResponse;
 import micheal65536.fountain.connector.plugin.Inventory;
+
+import java.util.concurrent.CompletableFuture;
 
 public final class PlayerConnectorPluginWrapper
 {
@@ -62,5 +65,14 @@ public final class PlayerConnectorPluginWrapper
 	public void onPlayerInventorySetHotbar(Inventory.HotbarItem[] hotbar) throws ConnectorPlugin.ConnectorPluginException
 	{
 		this.connectorPlugin.onPlayerInventorySetHotbar(this.playerId, hotbar);
+	}
+
+	/**
+	 * V2 API: Binds this player to a specific instance, returning the numeric dimension ID.
+	 */
+	@NotNull
+	public CompletableFuture<BindPlayerResult> bindPlayerToInstance(@NotNull String instanceId) throws ConnectorPlugin.ConnectorPluginException
+	{
+		return this.connectorPlugin.bindPlayerToInstance(this.playerId, instanceId);
 	}
 }

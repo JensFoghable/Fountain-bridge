@@ -22,16 +22,24 @@ import org.cloudburstmc.protocol.bedrock.packet.BedrockPacketHandler;
 import org.cloudburstmc.protocol.bedrock.packet.LoginPacket;
 import org.cloudburstmc.protocol.common.PacketSignal;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import micheal65536.fountain.connector.PlayerConnectorPluginWrapper;
+import micheal65536.fountain.connector.plugin.BindPlayerResult;
 import micheal65536.fountain.connector.plugin.ConnectorPlugin;
 import micheal65536.fountain.connector.plugin.PlayerLoginInfo;
+import micheal65536.fountain.connector.plugin.ResourceLocation;
 import micheal65536.fountain.utils.LoginUtils;
 
 import java.lang.reflect.Field;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class SessionsManager
@@ -49,6 +57,11 @@ public class SessionsManager
 	private final HashSet<LoginBedrockPacketHandler> pendingSessions = new HashSet<>();
 	private final HashSet<ActiveSession> activeSessions = new HashSet<>();
 	private final HashSet<ClosedSessionBedrockPacketHandler> closedSessions = new HashSet<>();
+
+	// V2 dimension/instance routing
+	private final HashMap<String, Integer> instanceIdToDimensionId = new HashMap<>();
+	private final HashMap<String, ResourceLocation> instanceIdToDimensionKey = new HashMap<>();
+	private final HashMap<String, String> playerUuidToInstanceId = new HashMap<>();
 
 	public SessionsManager(@NotNull String serverAddress, int serverPort, @NotNull ConnectorPlugin connectorPlugin, boolean useUUIDAsUsername)
 	{
@@ -103,6 +116,7 @@ public class SessionsManager
 		}
 		try
 		{
+			// v1 backward compatibility: let the connector plugin accept/reject the player
 			boolean accepted = this.connectorPlugin.onPlayerConnected(new PlayerLoginInfo(loginInfo.uuid));
 			if (!accepted)
 			{
@@ -119,6 +133,86 @@ public class SessionsManager
 			this.lock.unlock();
 			return;
 		}
+
+		// --- V2: resolve instance and dimension for this player ---
+		// 1. Check pre-configured player→instance binding
+		String instanceId = this.playerUuidToInstanceId.getOrDefault(loginInfo.uuid, null);
+
+		// 2. If no pre-binding, default to "default" shared instance
+		if (instanceId == null)
+		{
+			instanceId = "default";
+		}
+
+		int dimensionId = 0;          // default: overworld
+		ResourceLocation dimensionKey = null;
+		String resolvedInstanceId = instanceId;
+
+		try
+		{
+			BindPlayerResult bindResult = this.connectorPlugin.bindPlayerToInstance(loginInfo.uuid, instanceId)
+					.get(5, TimeUnit.SECONDS);
+
+			if (!bindResult.success)
+			{
+				LogManager.getLogger().warn("Connector plugin failed to bind player {} to instance {}: {}",
+						loginInfo.username, instanceId, bindResult.error);
+				this.disconnectPending(loginBedrockPacketHandler);
+				this.lock.unlock();
+				return;
+			}
+
+			dimensionId = bindResult.dimensionId;
+			// Resolve dimension key from the pre-registered mapping if available
+			ResourceLocation mappedKey = this.instanceIdToDimensionKey.getOrDefault(instanceId, null);
+			if (mappedKey != null)
+			{
+				dimensionKey = mappedKey;
+			}
+			else
+			{
+				// Fallback: construct a dimension key from the instance ID
+				dimensionKey = ResourceLocation.fromString("fountain:" + instanceId);
+			}
+			resolvedInstanceId = instanceId;
+
+			LogManager.getLogger().info("Bound player {} ({}) to instance {} dimensionId {} dimensionKey {}",
+					loginInfo.username, loginInfo.uuid, resolvedInstanceId, dimensionId, dimensionKey);
+		}
+		catch (ConnectorPlugin.ConnectorPluginException exception)
+		{
+			LogManager.getLogger().warn("Connector plugin threw exception when binding player {} to instance {}",
+					loginInfo.username, instanceId, exception);
+			this.disconnectPending(loginBedrockPacketHandler);
+			this.lock.unlock();
+			return;
+		}
+		catch (InterruptedException exception)
+		{
+			LogManager.getLogger().warn("Interrupted while binding player {} to instance {}",
+					loginInfo.username, instanceId);
+			Thread.currentThread().interrupt();
+			this.disconnectPending(loginBedrockPacketHandler);
+			this.lock.unlock();
+			return;
+		}
+		catch (ExecutionException exception)
+		{
+			LogManager.getLogger().warn("Execution exception while binding player {} to instance {}",
+					loginInfo.username, instanceId, exception);
+			this.disconnectPending(loginBedrockPacketHandler);
+			this.lock.unlock();
+			return;
+		}
+		catch (TimeoutException exception)
+		{
+			LogManager.getLogger().warn("Timeout while binding player {} to instance {} after 5 seconds",
+					loginInfo.username, instanceId);
+			this.disconnectPending(loginBedrockPacketHandler);
+			this.lock.unlock();
+			return;
+		}
+
 		this.pendingSessions.remove(loginBedrockPacketHandler);
 		LogManager.getLogger().info("Player logged in {} {}", loginInfo.username, loginInfo.uuid);
 
@@ -126,7 +220,8 @@ public class SessionsManager
 		TcpClientSession tcpClientSession = new TcpClientSession(this.serverAddress, this.serverPort, javaProtocol);
 
 		PlayerSession playerSession = new PlayerSession(loginBedrockPacketHandler.bedrockServerSession, tcpClientSession, new PlayerConnectorPluginWrapper(this.connectorPlugin, loginInfo.uuid), this::onSessionClosed);
-		this.activeSessions.add(new ActiveSession(loginInfo.uuid, playerSession, loginBedrockPacketHandler.bedrockServerSession));
+		playerSession.setAssignedDimension(dimensionKey, dimensionId);
+		this.activeSessions.add(new ActiveSession(loginInfo.uuid, resolvedInstanceId, playerSession, loginBedrockPacketHandler.bedrockServerSession));
 
 		playerSession.mutex.lock();
 		loginBedrockPacketHandler.bedrockServerSession.setPacketHandler(new ClientPacketHandler(playerSession));
@@ -263,15 +358,130 @@ public class SessionsManager
 		this.lock.unlock();
 	}
 
+	// --- V2 Dimension / Instance Routing API ---
+
+	/**
+	 * Registers an instance mapping: maps an orchestrator-level instanceId to a
+	 * numeric dimension ID and a {@link ResourceLocation}. Called by the bridge
+	 * when it loads a dimension mapping config file, or by the connector plugin
+	 * at runtime when instances are created/destroyed.
+	 */
+	public void updateInstanceDimensionMapping(@NotNull String instanceId, @NotNull ResourceLocation dimensionKey, int dimensionId)
+	{
+		this.lock.lock();
+		try
+		{
+			this.instanceIdToDimensionId.put(instanceId, dimensionId);
+			this.instanceIdToDimensionKey.put(instanceId, dimensionKey);
+			LogManager.getLogger().info("Updated instance mapping: instanceId={} dimensionKey={} dimensionId={}", instanceId, dimensionKey, dimensionId);
+		}
+		finally
+		{
+			this.lock.unlock();
+		}
+	}
+
+	/**
+	 * Removes a previously registered instance mapping.
+	 */
+	public void removeInstanceDimensionMapping(@NotNull String instanceId)
+	{
+		this.lock.lock();
+		try
+		{
+			this.instanceIdToDimensionId.remove(instanceId);
+			this.instanceIdToDimensionKey.remove(instanceId);
+			// Also remove any player bindings pointing to this instance
+			this.playerUuidToInstanceId.entrySet().removeIf(entry -> entry.getValue().equals(instanceId));
+			LogManager.getLogger().info("Removed instance mapping: instanceId={}", instanceId);
+		}
+		finally
+		{
+			this.lock.unlock();
+		}
+	}
+
+	/**
+	 * Pre-binds a player UUID to a specific instance. When that player connects,
+	 * the bridge will route them to the bound instance without needing a join code.
+	 */
+	public void preBindPlayerToInstance(@NotNull String playerUuid, @NotNull String instanceId)
+	{
+		this.lock.lock();
+		try
+		{
+			this.playerUuidToInstanceId.put(playerUuid, instanceId);
+			LogManager.getLogger().info("Pre-bound player {} to instance {}", playerUuid, instanceId);
+		}
+		finally
+		{
+			this.lock.unlock();
+		}
+	}
+
+	/**
+	 * Returns the dimension ID for the given instance, or -1 if not found.
+	 */
+	public int getDimensionIdForInstance(@NotNull String instanceId)
+	{
+		this.lock.lock();
+		try
+		{
+			return this.instanceIdToDimensionId.getOrDefault(instanceId, -1);
+		}
+		finally
+		{
+			this.lock.unlock();
+		}
+	}
+
+	/**
+	 * Returns the {@link ResourceLocation} dimension key for the given instance,
+	 * or {@code null} if not found.
+	 */
+	@Nullable
+	public ResourceLocation getDimensionKeyForInstance(@NotNull String instanceId)
+	{
+		this.lock.lock();
+		try
+		{
+			return this.instanceIdToDimensionKey.getOrDefault(instanceId, null);
+		}
+		finally
+		{
+			this.lock.unlock();
+		}
+	}
+
+	/**
+	 * Returns the instanceId for the given player UUID if a pre-binding exists,
+	 * or {@code null} otherwise.
+	 */
+	@Nullable
+	public String getInstanceIdForPlayer(@NotNull String playerUuid)
+	{
+		this.lock.lock();
+		try
+		{
+			return this.playerUuidToInstanceId.getOrDefault(playerUuid, null);
+		}
+		finally
+		{
+			this.lock.unlock();
+		}
+	}
+
 	private class ActiveSession
 	{
 		private final String uuid;
+		private final String instanceId;
 		private final PlayerSession playerSession;
 		private final BedrockServerSession bedrockServerSession;
 
-		public ActiveSession(String uuid, PlayerSession playerSession, BedrockServerSession bedrockServerSession)
+		public ActiveSession(String uuid, String instanceId, PlayerSession playerSession, BedrockServerSession bedrockServerSession)
 		{
 			this.uuid = uuid;
+			this.instanceId = instanceId;
 			this.playerSession = playerSession;
 			this.bedrockServerSession = bedrockServerSession;
 		}
