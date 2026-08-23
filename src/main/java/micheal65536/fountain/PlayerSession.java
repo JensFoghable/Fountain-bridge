@@ -193,7 +193,7 @@ public final class PlayerSession
 	{
 		this.dimensionKey = dimensionKey;
 		this.assignedDimensionId = dimensionId;
-		this.instanceId = dimensionKey.path();
+		this.instanceId = dimensionKey.path;
 		LogManager.getLogger().info("PlayerSession assigned to dimension {} (id={})", dimensionKey, dimensionId);
 	}
 
