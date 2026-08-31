@@ -242,7 +242,7 @@ public class ChunkManager
 					{
 						if (alreadyNotifiedMissingBlocks.add(javaId))
 						{
-							LogManager.getLogger().warn("Chunk contained block with no mapping {}", JavaBlocks.getName(javaId, this.fabricRegistryManager));
+							LogManager.getLogger().debug("Chunk contained block with no mapping {}", JavaBlocks.getName(javaId, this.fabricRegistryManager));
 						}
 					}
 

@@ -106,7 +106,7 @@ class Chunk
 						{
 							if (alreadyNotifiedMissingBlocks.add(javaName))
 							{
-								LogManager.getLogger().warn("Chunk contained block with no mapping {}", javaName);
+								LogManager.getLogger().debug("Chunk contained block with no mapping {}", javaName);
 							}
 						}
 
