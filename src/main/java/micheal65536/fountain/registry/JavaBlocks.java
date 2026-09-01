@@ -81,7 +81,7 @@ public class JavaBlocks
 					}
 					catch (BedrockMappingFailException exception)
 					{
-						LogManager.getLogger().warn("Cannot find Bedrock block for Java block {}: {}", name, exception.getMessage());
+						LogManager.getLogger().debug("Cannot find Bedrock block for Java block {}: {}", name, exception.getMessage());
 					}
 				}
 
