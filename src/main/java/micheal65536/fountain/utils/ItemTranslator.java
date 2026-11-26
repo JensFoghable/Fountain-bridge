@@ -8,6 +8,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import micheal65536.fountain.Main;
+import micheal65536.fountain.registry.BedrockItems;
+import micheal65536.fountain.registry.EarthItemCatalog;
 import micheal65536.fountain.registry.JavaItems;
 
 public final class ItemTranslator
@@ -35,7 +37,7 @@ public final class ItemTranslator
 		{
 			CompoundTag nbt = itemStack.getNbt();
 			int damage = nbt != null && nbt.contains("Damage") ? (int) nbt.get("Damage").getValue() : 0;
-			builder.damage(damage);
+			builder.damage(toEarthWear(bedrockMapping, JavaItems.getName(javaId, fabricRegistryManager), damage));
 		}
 		else
 		{
@@ -45,5 +47,33 @@ public final class ItemTranslator
 		builder.count(itemStack.getAmount());
 
 		return builder.build();
+	}
+
+	private static int toEarthWear(@NotNull JavaItems.BedrockMapping bedrockMapping, @Nullable String javaName, int javaDamage)
+	{
+		if (javaDamage <= 0)
+		{
+			return 0;
+		}
+
+		String bedrockName = BedrockItems.getName(bedrockMapping.id);
+		if (bedrockName == null)
+		{
+			return javaDamage;
+		}
+
+		String uuid = EarthItemCatalog.getUUID(bedrockName, bedrockMapping.aux);
+		if (uuid == null)
+		{
+			return javaDamage;
+		}
+
+		EarthItemCatalog.ItemInfo itemInfo = EarthItemCatalog.getItemInfo(uuid);
+		if (itemInfo == null || itemInfo.maxWear <= 0)
+		{
+			return javaDamage;
+		}
+
+		return ToolDurability.toEarthWear(javaDamage, itemInfo.maxWear, javaName != null ? javaName : bedrockName);
 	}
 }

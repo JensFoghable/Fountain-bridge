@@ -455,7 +455,8 @@ public final class GenoaInventoryHelper
 		{
 			CompoundTag nbt = itemStack.getNbt();
 			String instanceId = nbt != null && nbt.contains("GenoaInstanceId") ? (String) nbt.get("GenoaInstanceId").getValue() : UUID.randomUUID().toString();
-			int wear = nbt != null && nbt.contains("Damage") ? (int) nbt.get("Damage").getValue() : 0;
+			int javaDamage = nbt != null && nbt.contains("Damage") ? (int) nbt.get("Damage").getValue() : 0;
+			int wear = ToolDurability.toEarthWear(javaDamage, itemInfo.maxWear, JavaItems.getName(javaId, this.fabricRegistryManager));
 			return new Item(uuid, instanceId, wear);
 		}
 	}
@@ -522,8 +523,19 @@ public final class GenoaInventoryHelper
 
 		if (instanceId != null)
 		{
+			int earthMaxWear = 0;
+			String uuid = EarthItemCatalog.getUUID(name, aux);
+			if (uuid != null)
+			{
+				EarthItemCatalog.ItemInfo itemInfo = EarthItemCatalog.getItemInfo(uuid);
+				if (itemInfo != null)
+				{
+					earthMaxWear = itemInfo.maxWear;
+				}
+			}
+
 			CompoundTag nbt = new CompoundTag("");
-			nbt.put(new IntTag("Damage", wear));
+			nbt.put(new IntTag("Damage", ToolDurability.toJavaDamage(wear, earthMaxWear, JavaItems.getName(javaId, this.fabricRegistryManager))));
 			nbt.put(new StringTag("GenoaInstanceId", instanceId));
 			return new ItemStack(javaId, count, nbt);
 		}

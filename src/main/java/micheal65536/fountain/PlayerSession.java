@@ -739,6 +739,13 @@ public final class PlayerSession
 
 	public void onJavaEntityEvent(int javaEntityInstanceId, @NotNull EntityEvent entityEvent)
 	{
+		if (javaEntityInstanceId == this.javaPlayerEntityInstance.getInstanceId()
+			&& (entityEvent == EntityEvent.LIVING_EQUIPMENT_BREAK_MAIN_HAND || entityEvent == EntityEvent.LIVING_EQUIPMENT_BREAK_OFF_HAND))
+		{
+			this.effectManager.sendItemBreakSound(this.javaPlayerEntityInstance.getPos());
+			return;
+		}
+
 		EntityManager.JavaEntityInstance entityInstance = this.entityManager.getJavaEntity(javaEntityInstanceId);
 		if (entityInstance != null)
 		{

@@ -111,6 +111,11 @@ public class EffectManager
 		this.playerSession.sendBedrockPacket(playSoundPacket);
 	}
 
+	public void sendItemBreakSound(@NotNull Vector3f position)
+	{
+		this.sendSoundEvent(SoundEvent.BREAK, "", 0, position);
+	}
+
 	private void sendSoundEvent(@NotNull SoundEvent soundEvent, @NotNull String identifier, int extraData, @NotNull Vector3f position)
 	{
 		LevelSoundEventPacket levelSoundEventPacket = new LevelSoundEventPacket();
