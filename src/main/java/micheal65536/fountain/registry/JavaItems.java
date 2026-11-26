@@ -49,6 +49,10 @@ public class JavaItems
 				else
 				{
 					bedrockMap.put(id, new BedrockMapping(bedrockId, bedrockAux, bedrockToolWear));
+					if (bedrockMapping.has("oneway") && bedrockMapping.get("oneway").getAsBoolean())
+					{
+						continue;
+					}
 					if (javaIdMap.put(new ItemNameAndAux(bedrockName, bedrockAux), id) != null)
 					{
 						LogManager.getLogger().warn("Duplicate Bedrock item mapping {} {}", bedrockName, bedrockAux);

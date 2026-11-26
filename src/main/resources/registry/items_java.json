@@ -7057,7 +7057,8 @@
     "name": "minecraft:raw_gold",
     "id": 810,
     "bedrock": {
-      "ignore": true
+      "name": "minecraft:gold_ore",
+      "oneway": true
     }
   },
   {
@@ -7071,7 +7072,8 @@
     "name": "minecraft:raw_iron",
     "id": 806,
     "bedrock": {
-      "ignore": true
+      "name": "minecraft:iron_ore",
+      "oneway": true
     }
   },
   {
