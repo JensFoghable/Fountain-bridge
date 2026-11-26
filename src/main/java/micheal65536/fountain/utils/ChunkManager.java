@@ -587,6 +587,16 @@ public class ChunkManager
 		this.playerSession.sendBedrockPacket(blockEventPacket);
 	}
 
+	public int getBedrockBlock(@NotNull Vector3i position)
+	{
+		if (this.isOutOfBounds(position.getX(), position.getY(), position.getZ()))
+		{
+			return BedrockBlocks.AIR;
+		}
+		Chunk chunk = this.getChunkForBlock(position.getX(), position.getZ());
+		return chunk.getBlock(getChunkBlockOffset(position.getX()), position.getY(), getChunkBlockOffset(position.getZ()), 0);
+	}
+
 	private boolean isOutOfBounds(int x, int y, int z)
 	{
 		return y < 0 || y >= 256 || x < -this.chunkRadius * 16 || x >= this.chunkRadius * 16 || z < -this.chunkRadius * 16 || z >= this.chunkRadius * 16;

@@ -88,6 +88,7 @@ import micheal65536.fountain.connector.PlayerConnectorPluginWrapper;
 import micheal65536.fountain.connector.plugin.ConnectorPlugin;
 import micheal65536.fountain.connector.plugin.DisconnectResponse;
 import micheal65536.fountain.connector.plugin.ResourceLocation;
+import micheal65536.fountain.registry.BedrockBlocks;
 import micheal65536.fountain.registry.EarthEntitiesRegistry;
 import micheal65536.fountain.registry.JavaItems;
 import micheal65536.fountain.utils.ChunkManager;
@@ -916,6 +917,11 @@ public final class PlayerSession
 			}
 			else if (packet.getActionType() == 2) // dig
 			{
+				int bedrockBlockId = this.chunkManager.getBedrockBlock(packet.getBlockPosition());
+				if (bedrockBlockId != BedrockBlocks.AIR)
+				{
+					this.effectManager.sendBlockHit(packet.getBlockPosition(), bedrockBlockId, packet.getBlockFace());
+				}
 				ServerboundPlayerActionPacket serverboundPlayerActionPacket = new ServerboundPlayerActionPacket(PlayerAction.START_DIGGING, packet.getBlockPosition(), Direction.VALUES[packet.getBlockFace()], 0);
 				this.sendJavaPacket(serverboundPlayerActionPacket);
 			}
