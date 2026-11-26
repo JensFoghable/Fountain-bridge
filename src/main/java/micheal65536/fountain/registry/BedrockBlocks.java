@@ -44,7 +44,7 @@ public class BedrockBlocks
 					}
 				}
 				BlockNameAndState blockNameAndState = new BlockNameAndState(name, state);
-				if (stateToIdMap.put(blockNameAndState, id) != null)
+				if (stateToIdMap.putIfAbsent(blockNameAndState, id) != null)
 				{
 					LogManager.getLogger().warn("Duplicate Bedrock block name/state {}", name);
 				}

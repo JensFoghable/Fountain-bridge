@@ -24,6 +24,8 @@ import java.io.StringWriter;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.UUID;
 
 public final class GenoaInventoryHelper
@@ -31,6 +33,8 @@ public final class GenoaInventoryHelper
 	private final FabricRegistryManager fabricRegistryManager;
 
 	private final PlayerConnectorPluginWrapper playerConnectorPluginWrapper;
+
+	private final LinkedHashMap<String, Integer> collectedItems = new LinkedHashMap<>();
 
 	public GenoaInventoryHelper(@NotNull FabricRegistryManager fabricRegistryManager, @NotNull PlayerConnectorPluginWrapper playerConnectorPluginWrapper)
 	{
@@ -289,6 +293,7 @@ public final class GenoaInventoryHelper
 			try
 			{
 				this.playerConnectorPluginWrapper.onPlayerInventoryAddItem(item.uuid, item.count);
+				this.collectedItems.merge(item.uuid, item.count, Integer::sum);
 			}
 			catch (ConnectorPlugin.ConnectorPluginException exception)
 			{
@@ -306,6 +311,7 @@ public final class GenoaInventoryHelper
 			try
 			{
 				this.playerConnectorPluginWrapper.onPlayerInventoryAddItem(item.uuid, item.instanceId, item.wear);
+				this.collectedItems.merge(item.uuid, 1, Integer::sum);
 			}
 			catch (ConnectorPlugin.ConnectorPluginException exception)
 			{
@@ -315,6 +321,30 @@ public final class GenoaInventoryHelper
 	}
 
 	public int takeItem(@NotNull Item item)
+	{
+		int removedCount = this.removeItem(item);
+		if (removedCount > 0)
+		{
+			this.collectedItems.computeIfPresent(item.uuid, (uuid, count) -> Math.max(count - removedCount, 0));
+		}
+		return removedCount;
+	}
+
+	@NotNull
+	public Map<String, Integer> getCollectedItems()
+	{
+		LinkedHashMap<String, Integer> collectedItems = new LinkedHashMap<>();
+		this.collectedItems.forEach((uuid, count) ->
+		{
+			if (count > 0)
+			{
+				collectedItems.put(uuid, count);
+			}
+		});
+		return collectedItems;
+	}
+
+	private int removeItem(@NotNull Item item)
 	{
 		EarthItemCatalog.NameAndAux nameAndAux = EarthItemCatalog.getNameAndAux(item.uuid);
 		if (nameAndAux == null)
@@ -425,7 +455,8 @@ public final class GenoaInventoryHelper
 		{
 			CompoundTag nbt = itemStack.getNbt();
 			String instanceId = nbt != null && nbt.contains("GenoaInstanceId") ? (String) nbt.get("GenoaInstanceId").getValue() : UUID.randomUUID().toString();
-			int wear = nbt != null && nbt.contains("Damage") ? (int) nbt.get("Damage").getValue() : 0;
+			int javaDamage = nbt != null && nbt.contains("Damage") ? (int) nbt.get("Damage").getValue() : 0;
+			int wear = ToolDurability.toEarthWear(javaDamage, itemInfo.maxWear, JavaItems.getName(javaId, this.fabricRegistryManager));
 			return new Item(uuid, instanceId, wear);
 		}
 	}
@@ -492,8 +523,19 @@ public final class GenoaInventoryHelper
 
 		if (instanceId != null)
 		{
+			int earthMaxWear = 0;
+			String uuid = EarthItemCatalog.getUUID(name, aux);
+			if (uuid != null)
+			{
+				EarthItemCatalog.ItemInfo itemInfo = EarthItemCatalog.getItemInfo(uuid);
+				if (itemInfo != null)
+				{
+					earthMaxWear = itemInfo.maxWear;
+				}
+			}
+
 			CompoundTag nbt = new CompoundTag("");
-			nbt.put(new IntTag("Damage", wear));
+			nbt.put(new IntTag("Damage", ToolDurability.toJavaDamage(wear, earthMaxWear, JavaItems.getName(javaId, this.fabricRegistryManager))));
 			nbt.put(new StringTag("GenoaInstanceId", instanceId));
 			return new ItemStack(javaId, count, nbt);
 		}

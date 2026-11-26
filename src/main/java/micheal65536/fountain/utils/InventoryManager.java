@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.stream.IntStream;
 
 public class InventoryManager
@@ -60,6 +61,12 @@ public class InventoryManager
 			GenoaInventoryHelper.Inventory inventory = this.genoaInventoryHelper.getInventoryFromConnectorPlugin();
 			this.sendInitialSetHotbarRequest(inventory.hotbar);
 		}
+	}
+
+	@NotNull
+	public Map<String, Integer> getCollectedItems()
+	{
+		return this.genoaInventoryHelper.getCollectedItems();
 	}
 
 	public void syncInventoryFromServer()

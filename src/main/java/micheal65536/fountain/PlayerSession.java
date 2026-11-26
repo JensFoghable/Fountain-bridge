@@ -58,6 +58,7 @@ import org.cloudburstmc.protocol.bedrock.BedrockSession;
 import org.cloudburstmc.protocol.bedrock.data.GamePublishSetting;
 import org.cloudburstmc.protocol.bedrock.data.GameRuleData;
 import org.cloudburstmc.protocol.bedrock.data.GameType;
+import org.cloudburstmc.protocol.bedrock.data.GenoaDisconnectItem1;
 import org.cloudburstmc.protocol.bedrock.data.PlayerPermission;
 import org.cloudburstmc.protocol.bedrock.data.inventory.ItemData;
 import org.cloudburstmc.protocol.bedrock.data.inventory.transaction.InventoryTransactionType;
@@ -87,6 +88,7 @@ import micheal65536.fountain.connector.PlayerConnectorPluginWrapper;
 import micheal65536.fountain.connector.plugin.ConnectorPlugin;
 import micheal65536.fountain.connector.plugin.DisconnectResponse;
 import micheal65536.fountain.connector.plugin.ResourceLocation;
+import micheal65536.fountain.registry.BedrockBlocks;
 import micheal65536.fountain.registry.EarthEntitiesRegistry;
 import micheal65536.fountain.registry.JavaItems;
 import micheal65536.fountain.utils.ChunkManager;
@@ -103,6 +105,8 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 
@@ -134,6 +138,8 @@ public final class PlayerSession
 	private final PlayerConnectorPluginWrapper playerConnectorPluginWrapper;
 	private final Consumer<PlayerSession> disconnectCallback;
 	private boolean disconnected = false;
+	private boolean disconnecting = false;
+	private boolean disconnectIdSent = false;
 
 	// V2 instance/dimension routing
 	private String instanceId;
@@ -214,6 +220,11 @@ public final class PlayerSession
 		return this.assignedDimensionId;
 	}
 
+	public boolean isDisconnecting()
+	{
+		return this.disconnecting || this.disconnected;
+	}
+
 	public void disconnect(boolean fromServer)
 	{
 		if (this.disconnected)
@@ -235,10 +246,12 @@ public final class PlayerSession
 			}
 		}
 
+		boolean hasDied = this.javaPlayerEntityInstance != null && this.javaPlayerEntityInstance.getHealth() <= 0.0f;
+
 		DisconnectResponse disconnectResponse;
 		try
 		{
-			disconnectResponse = this.playerConnectorPluginWrapper.onPlayerDisconnected(this.javaPlayerEntityInstance.getHealth());
+			disconnectResponse = this.playerConnectorPluginWrapper.onPlayerDisconnected(this.javaPlayerEntityInstance != null ? this.javaPlayerEntityInstance.getHealth() : 0.0f);
 		}
 		catch (ConnectorPlugin.ConnectorPluginException exception)
 		{
@@ -248,14 +261,14 @@ public final class PlayerSession
 
 		if (this.bedrock.isConnected())
 		{
-			// TODO: determine correct flow for disconnect start/disconnect ID packets?
-			// TODO: include data
-
-			GenoaDisconnectStartPacket genoaDisconnectStartPacket = new GenoaDisconnectStartPacket();
-			this.sendBedrockPacket(genoaDisconnectStartPacket);
-
-			GenoaDisconnectIdPacket genoaDisconnectIdPacket = new GenoaDisconnectIdPacket();
-			this.sendBedrockPacket(genoaDisconnectIdPacket);
+			if (!this.disconnecting)
+			{
+				this.sendDisconnectStart((byte) (fromServer ? 0 : 3));
+			}
+			if (!this.disconnectIdSent)
+			{
+				this.sendDisconnectId(hasDied);
+			}
 		}
 
 		this.java.disconnect("");
@@ -267,11 +280,91 @@ public final class PlayerSession
 	{
 		LogManager.getLogger().info("Client disconnect request");
 
-		this.disconnect(false);
+		this.beginDisconnect((byte) 3, false);
+	}
+
+	private void beginDisconnect(byte reason, boolean hasDied)
+	{
+		if (this.disconnecting || this.disconnected)
+		{
+			return;
+		}
+		this.disconnecting = true;
+
+		if (!this.bedrock.isConnected())
+		{
+			return;
+		}
+
+		this.sendDisconnectStart(reason);
+
+		try
+		{
+			this.bedrock.getPeer().getChannel().eventLoop().schedule(() ->
+			{
+				try
+				{
+					this.mutex.lock();
+					if (this.disconnected || !this.bedrock.isConnected())
+					{
+						return;
+					}
+
+					this.sendDisconnectId(hasDied);
+
+					this.bedrock.getPeer().getChannel().eventLoop().schedule(() ->
+					{
+						try
+						{
+							this.mutex.lock();
+							if (!this.disconnected)
+							{
+								LogManager.getLogger().warn("Client did not disconnect within timeout after GenoaDisconnectIdPacket, forcing disconnect");
+								this.disconnect(false);
+							}
+						}
+						finally
+						{
+							this.mutex.unlock();
+						}
+					}, 10, TimeUnit.SECONDS);
+				}
+				finally
+				{
+					this.mutex.unlock();
+				}
+			}, 5, TimeUnit.SECONDS);
+		}
+		catch (Exception exception)
+		{
+			LogManager.getLogger().warn("Failed to schedule disconnect packet", exception);
+			this.disconnect(false);
+		}
+	}
+
+	private void sendDisconnectStart(byte reason)
+	{
+		GenoaDisconnectStartPacket genoaDisconnectStartPacket = new GenoaDisconnectStartPacket();
+		genoaDisconnectStartPacket.setByte1(reason);
+		this.sendBedrockPacketImmediately(genoaDisconnectStartPacket);
+	}
+
+	private void sendDisconnectId(boolean hasDied)
+	{
+		GenoaDisconnectIdPacket genoaDisconnectIdPacket = new GenoaDisconnectIdPacket();
+		this.inventoryManager.getCollectedItems().forEach((uuid, count) -> genoaDisconnectIdPacket.getKilledMobs().add(new GenoaDisconnectItem1(2, count, UUID.fromString(uuid))));
+		genoaDisconnectIdPacket.setSInt1(6);
+		genoaDisconnectIdPacket.setHasDied(hasDied);
+		this.sendBedrockPacketImmediately(genoaDisconnectIdPacket);
+		this.disconnectIdSent = true;
 	}
 
 	private void tick()
 	{
+		if (this.disconnecting || this.disconnected)
+		{
+			return;
+		}
 		this.chunkManager.tick();
 	}
 
@@ -647,6 +740,13 @@ public final class PlayerSession
 
 	public void onJavaEntityEvent(int javaEntityInstanceId, @NotNull EntityEvent entityEvent)
 	{
+		if (javaEntityInstanceId == this.javaPlayerEntityInstance.getInstanceId()
+			&& (entityEvent == EntityEvent.LIVING_EQUIPMENT_BREAK_MAIN_HAND || entityEvent == EntityEvent.LIVING_EQUIPMENT_BREAK_OFF_HAND))
+		{
+			this.effectManager.sendItemBreakSound(this.javaPlayerEntityInstance.getPos());
+			return;
+		}
+
 		EntityManager.JavaEntityInstance entityInstance = this.entityManager.getJavaEntity(javaEntityInstanceId);
 		if (entityInstance != null)
 		{
@@ -797,7 +897,7 @@ public final class PlayerSession
 		}
 		else
 		{
-			this.disconnect(true);
+			this.beginDisconnect((byte) 2, true);
 		}
 	}
 
@@ -817,6 +917,11 @@ public final class PlayerSession
 			}
 			else if (packet.getActionType() == 2) // dig
 			{
+				int bedrockBlockId = this.chunkManager.getBedrockBlock(packet.getBlockPosition());
+				if (bedrockBlockId != BedrockBlocks.AIR)
+				{
+					this.effectManager.sendBlockHit(packet.getBlockPosition(), bedrockBlockId, packet.getBlockFace());
+				}
 				ServerboundPlayerActionPacket serverboundPlayerActionPacket = new ServerboundPlayerActionPacket(PlayerAction.START_DIGGING, packet.getBlockPosition(), Direction.VALUES[packet.getBlockFace()], 0);
 				this.sendJavaPacket(serverboundPlayerActionPacket);
 			}
@@ -1017,7 +1122,16 @@ public final class PlayerSession
 
 	public void sendBedrockPacket(@NotNull BedrockPacket packet)
 	{
+		if (this.disconnecting || this.disconnected)
+		{
+			return;
+		}
 		this.bedrock.sendPacket(packet);
+	}
+
+	public void sendBedrockPacketImmediately(@NotNull BedrockPacket packet)
+	{
+		this.bedrock.sendPacketImmediately(packet);
 	}
 
 	public void sendJavaPacket(@NotNull MinecraftPacket packet)

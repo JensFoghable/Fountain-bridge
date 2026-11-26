@@ -36,6 +36,11 @@ public final class ClientPacketHandler implements BedrockPacketHandler
 		{
 			this.playerSession.mutex.lock();
 
+			if (this.playerSession.isDisconnecting() && !(packet instanceof GenoaDisconnectRequestPacket))
+			{
+				return PacketSignal.HANDLED;
+			}
+
 			PacketSignal packetSignal = BedrockPacketHandler.super.handlePacket(packet);
 			if (packetSignal != PacketSignal.HANDLED)
 			{

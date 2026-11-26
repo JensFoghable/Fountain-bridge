@@ -111,6 +111,18 @@ public class EffectManager
 		this.playerSession.sendBedrockPacket(playSoundPacket);
 	}
 
+	public void sendItemBreakSound(@NotNull Vector3f position)
+	{
+		this.sendSoundEvent(SoundEvent.BREAK, "", -1, position);
+	}
+
+	public void sendBlockHit(@NotNull Vector3i blockPosition, int bedrockBlockId, int face)
+	{
+		Vector3f centre = blockPosition.toFloat().add(0.5f, 0.5f, 0.5f);
+		this.sendSoundEvent(SoundEvent.HIT, "", bedrockBlockId, centre);
+		this.sendLevelEvent(LevelEvent.PARTICLE_CRACK_BLOCK, bedrockBlockId | ((face & 0xFF) << 24), centre);
+	}
+
 	private void sendSoundEvent(@NotNull SoundEvent soundEvent, @NotNull String identifier, int extraData, @NotNull Vector3f position)
 	{
 		LevelSoundEventPacket levelSoundEventPacket = new LevelSoundEventPacket();
