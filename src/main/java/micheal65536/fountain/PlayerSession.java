@@ -830,6 +830,7 @@ public final class PlayerSession
 			{
 				this.sendItemParticle(item.getDefinition().getRuntimeId(), item.getDamage(), collectedJavaEntityInstance.getPos(), this.javaPlayerEntityInstance.bedrockEntityInstance.getInstanceId());
 			}
+			this.effectManager.sendItemPickupSound(collectedJavaEntityInstance.getPos());
 		}
 		else
 		{
