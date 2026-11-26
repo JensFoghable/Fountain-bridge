@@ -16,10 +16,14 @@ import com.github.steveice10.packetlib.tcp.TcpClientSession;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import org.apache.logging.log4j.LogManager;
 import org.cloudburstmc.protocol.bedrock.BedrockServerSession;
+import org.cloudburstmc.protocol.bedrock.codec.BedrockCodec;
 import org.cloudburstmc.protocol.bedrock.codec.v425_genoa.Bedrock_v425_Genoa;
 import org.cloudburstmc.protocol.bedrock.packet.BedrockPacket;
 import org.cloudburstmc.protocol.bedrock.packet.BedrockPacketHandler;
+import org.cloudburstmc.protocol.bedrock.packet.GenoaDisconnectIdPacket;
 import org.cloudburstmc.protocol.bedrock.packet.LoginPacket;
+import org.cloudburstmc.protocol.bedrock.packet.MapCreateLockedCopyPacket;
+import org.cloudburstmc.protocol.bedrock.packet.OnScreenTextureAnimationPacket;
 import org.cloudburstmc.protocol.common.PacketSignal;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -29,6 +33,7 @@ import micheal65536.fountain.connector.plugin.BindPlayerResult;
 import micheal65536.fountain.connector.plugin.ConnectorPlugin;
 import micheal65536.fountain.connector.plugin.PlayerLoginInfo;
 import micheal65536.fountain.connector.plugin.ResourceLocation;
+import micheal65536.fountain.utils.GenoaDisconnectIdSerializer;
 import micheal65536.fountain.utils.LoginUtils;
 
 import java.lang.reflect.Field;
@@ -45,6 +50,11 @@ import java.util.concurrent.locks.ReentrantLock;
 public class SessionsManager
 {
 	private static final PacketCodec MINECRAFT_CODEC_WITH_CUSTOM_ENTITY_SUPPORT = createCustomCodec();
+	private static final BedrockCodec BEDROCK_CODEC = Bedrock_v425_Genoa.CODEC.toBuilder()
+			.deregisterPacket(OnScreenTextureAnimationPacket.class)
+			.deregisterPacket(MapCreateLockedCopyPacket.class)
+			.updateSerializer(GenoaDisconnectIdPacket.class, GenoaDisconnectIdSerializer.INSTANCE)
+			.build();
 
 	private final String serverAddress;
 	private final int serverPort;
@@ -83,7 +93,7 @@ public class SessionsManager
 			return;
 		}
 
-		bedrockServerSession.setCodec(Bedrock_v425_Genoa.CODEC);
+		bedrockServerSession.setCodec(BEDROCK_CODEC);
 		bedrockServerSession.getPeer().getCodecHelper().setBlockDefinitions(Main.BLOCK_DEFINITION_REGISTRY);
 		bedrockServerSession.getPeer().getCodecHelper().setItemDefinitions(Main.ITEM_DEFINITION_REGISTRY);
 
@@ -239,9 +249,12 @@ public class SessionsManager
 		{
 			this.activeSessions.remove(activeSession);
 
-			ClosedSessionBedrockPacketHandler closedSessionBedrockPacketHandler = new ClosedSessionBedrockPacketHandler(activeSession.bedrockServerSession);
-			this.closedSessions.add(closedSessionBedrockPacketHandler);
-			activeSession.bedrockServerSession.setPacketHandler(closedSessionBedrockPacketHandler);
+			if (activeSession.bedrockServerSession.isConnected())
+			{
+				ClosedSessionBedrockPacketHandler closedSessionBedrockPacketHandler = new ClosedSessionBedrockPacketHandler(activeSession.bedrockServerSession);
+				this.closedSessions.add(closedSessionBedrockPacketHandler);
+				activeSession.bedrockServerSession.setPacketHandler(closedSessionBedrockPacketHandler);
+			}
 
 			LogManager.getLogger().info("Session has been closed {}", activeSession.uuid);
 		}

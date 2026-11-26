@@ -79,6 +79,19 @@ public final class ServerPacketHandler extends SessionAdapter
 		{
 			this.playerSession.mutex.lock();
 
+			if (this.playerSession.isDisconnecting())
+			{
+				if (packet instanceof ClientboundPingPacket)
+				{
+					this.playerSession.sendJavaPacket(new ServerboundPongPacket(((ClientboundPingPacket) packet).getId()));
+				}
+				else if (packet instanceof ClientboundCustomPayloadPacket && ((ClientboundCustomPayloadPacket) packet).getChannel().equals("fountain:inventory_sync_response"))
+				{
+					this.playerSession.onJavaInventorySyncResponse(((ClientboundCustomPayloadPacket) packet).getData());
+				}
+				return;
+			}
+
 			if (packet instanceof ClientboundLoginPacket)
 			{
 				this.playerSession.onJavaLogin((ClientboundLoginPacket) packet);
