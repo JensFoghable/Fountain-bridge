@@ -423,6 +423,7 @@ public final class PlayerSession
 		startGamePacket.setEnchantmentSeed(0);
 		startGamePacket.setMultiplayerCorrelationId("");
 		this.sendBedrockPacket(startGamePacket);
+		LogManager.getLogger().info("StartGamePacket sent for player {} (dimension {}, pos {}, {}, {})", this.playerConnectorPluginWrapper.getPlayerId(), this.assignedDimensionId, startGamePacket.getPlayerPosition().getX(), startGamePacket.getPlayerPosition().getY(), startGamePacket.getPlayerPosition().getZ());
 
 		GenoaGameplaySettingsPacket genoaGameplaySettingsPacket = new GenoaGameplaySettingsPacket();
 		genoaGameplaySettingsPacket.setMultiplePlayersOnline(false);
@@ -454,6 +455,7 @@ public final class PlayerSession
 		networkChunkPublisherUpdatePacket.setRadius(HARDCODED_CHUNK_RADIUS * 16);
 		this.sendBedrockPacket(networkChunkPublisherUpdatePacket);
 
+		LogManager.getLogger().info("Prefilling {} empty chunks for player {} (chunk radius {})", 4 * HARDCODED_CHUNK_RADIUS * HARDCODED_CHUNK_RADIUS, this.playerConnectorPluginWrapper.getPlayerId(), HARDCODED_CHUNK_RADIUS);
 		for (int chunkX = -HARDCODED_CHUNK_RADIUS; chunkX < HARDCODED_CHUNK_RADIUS; chunkX++)
 		{
 			for (int chunkZ = -HARDCODED_CHUNK_RADIUS; chunkZ < HARDCODED_CHUNK_RADIUS; chunkZ++)

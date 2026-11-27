@@ -21,6 +21,12 @@ public final class PlayerConnectorPluginWrapper
 	}
 
 	@NotNull
+	public String getPlayerId()
+	{
+		return this.playerId;
+	}
+
+	@NotNull
 	public DisconnectResponse onPlayerDisconnected(float health) throws ConnectorPlugin.ConnectorPluginException
 	{
 		return this.connectorPlugin.onPlayerDisconnected(this.playerId, health);

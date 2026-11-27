@@ -113,7 +113,7 @@ public final class ServerPacketHandler extends SessionAdapter
 			}
 			else if (packet instanceof ClientboundDisconnectPacket)
 			{
-				// empty
+				LogManager.getLogger().warn("Server sent disconnect packet: {}", PlainTextComponentSerializer.plainText().serialize(((ClientboundDisconnectPacket) packet).getReason()));
 			}
 
 			else if (packet instanceof ClientboundDelimiterPacket)
@@ -327,6 +327,10 @@ public final class ServerPacketHandler extends SessionAdapter
 			{
 				LogManager.getLogger().debug("Unhandled server packet {}", packet.getClass().getSimpleName());
 			}
+		}
+		catch (Exception exception)
+		{
+			LogManager.getLogger().warn("Exception while handling server packet {} (session will die silently if unhandled)", packet.getClass().getSimpleName(), exception);
 		}
 		finally
 		{

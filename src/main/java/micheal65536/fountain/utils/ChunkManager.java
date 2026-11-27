@@ -194,6 +194,7 @@ public class ChunkManager
 		int chunkZ = clientboundLevelChunkWithLightPacket.getZ();
 		if (chunkX < -this.chunkRadius || chunkX >= this.chunkRadius || chunkZ < -this.chunkRadius || chunkZ >= this.chunkRadius)
 		{
+			LogManager.getLogger().info("Ignoring java level chunk {}, {} (outside chunk radius {})", chunkX, chunkZ, this.chunkRadius);
 			return;
 		}
 		Chunk bedrockChunk = this.getChunk(clientboundLevelChunkWithLightPacket.getX(), clientboundLevelChunkWithLightPacket.getZ());

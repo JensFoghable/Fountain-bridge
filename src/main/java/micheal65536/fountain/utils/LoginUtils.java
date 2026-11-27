@@ -3,6 +3,7 @@ package micheal65536.fountain.utils;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
+import org.apache.logging.log4j.LogManager;
 import org.cloudburstmc.protocol.bedrock.packet.LoginPacket;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -43,8 +44,10 @@ public class LoginUtils
 		{
 			JsonElement root = JsonParser.parseReader(new StringReader(data));
 
-			uuid = root.getAsJsonObject().get("PlatformOnlineId").getAsString().toLowerCase(Locale.ROOT);
+			String platformOnlineId = root.getAsJsonObject().get("PlatformOnlineId").getAsString();
 			username = root.getAsJsonObject().get("ThirdPartyName").getAsString();
+			uuid = platformOnlineId.toLowerCase(Locale.ROOT);
+			LogManager.getLogger().info("Login identity: PlatformOnlineId={}, ThirdPartyName=\"{}\", using player id/uuid {}", platformOnlineId, username, uuid);
 		}
 		catch (JsonParseException | UnsupportedOperationException | IllegalStateException | NullPointerException exception)
 		{
