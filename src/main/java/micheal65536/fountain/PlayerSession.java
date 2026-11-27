@@ -60,6 +60,7 @@ import org.cloudburstmc.protocol.bedrock.data.GameRuleData;
 import org.cloudburstmc.protocol.bedrock.data.GameType;
 import org.cloudburstmc.protocol.bedrock.data.GenoaDisconnectItem1;
 import org.cloudburstmc.protocol.bedrock.data.GenoaDisconnectItem3;
+import org.cloudburstmc.protocol.bedrock.data.GenoaItemAwardedNotification;
 import org.cloudburstmc.protocol.bedrock.data.PlayerPermission;
 import org.cloudburstmc.protocol.bedrock.data.inventory.ItemData;
 import org.cloudburstmc.protocol.bedrock.data.inventory.transaction.InventoryTransactionType;
@@ -69,6 +70,7 @@ import org.cloudburstmc.protocol.bedrock.packet.BedrockPacket;
 import org.cloudburstmc.protocol.bedrock.packet.ChunkRadiusUpdatedPacket;
 import org.cloudburstmc.protocol.bedrock.packet.GameRulesChangedPacket;
 import org.cloudburstmc.protocol.bedrock.packet.GenoaBlockDestroyPacket;
+import org.cloudburstmc.protocol.bedrock.packet.GenoaItemAwardedNotificationPacket;
 import org.cloudburstmc.protocol.bedrock.packet.GenoaDisconnectIdPacket;
 import org.cloudburstmc.protocol.bedrock.packet.GenoaDisconnectStartPacket;
 import org.cloudburstmc.protocol.bedrock.packet.GenoaGameplaySettingsPacket;
@@ -1110,6 +1112,25 @@ public final class PlayerSession
 			loot.items.forEach((uuid, count) -> this.adventureChestLoot.merge(uuid, count, Integer::sum));
 		}
 		this.onAdventureChestRemoved(loot.rarity);
+		this.sendAdventureChestAward(loot);
+	}
+
+	private void sendAdventureChestAward(@NotNull AdventureChestLoot loot)
+	{
+		if (!Arrays.asList("common", "uncommon", "rare", "epic", "legendary").contains(loot.rarity))
+		{
+			return;
+		}
+
+		GenoaItemAwardedNotificationPacket packet = new GenoaItemAwardedNotificationPacket();
+		packet.setString1("ar.award.adventure_complete");
+		packet.setString2("textures/ui/icons/graphic_icons/adventure_chest_" + loot.rarity);
+		packet.setString3("adventure.cue.chest." + loot.rarity + ".break");
+		packet.setArr(loot.items.entrySet().stream()
+				.map(entry -> new GenoaItemAwardedNotification(2, entry.getValue(), UUID.fromString(entry.getKey())))
+				.toArray(GenoaItemAwardedNotification[]::new));
+		this.sendBedrockPacket(packet);
+		LogManager.getLogger().info("Sent the adventure chest award ({}) with {} items", loot.rarity, packet.getArr().length);
 	}
 
 	public void onAdventureChestBlockRemoved(@NotNull String rarity, @NotNull Vector3i position)
