@@ -74,6 +74,7 @@ public class SessionsManager
 	// V2 dimension/instance routing
 	private final HashMap<String, ResourceLocation> instanceIdToDimensionKey = new HashMap<>();
 	private final HashMap<String, String> playerUuidToInstanceId = new HashMap<>();
+	private String eventBusAddress = null;
 
 	public SessionsManager(@NotNull String serverAddress, int serverPort, @NotNull ConnectorPlugin connectorPlugin, boolean useUUIDAsUsername)
 	{
@@ -81,6 +82,11 @@ public class SessionsManager
 		this.serverPort = serverPort;
 		this.connectorPlugin = connectorPlugin;
 		this.useUUIDAsUsername = useUUIDAsUsername;
+	}
+
+	public void setEventBusAddress(@Nullable String eventBusAddress)
+	{
+		this.eventBusAddress = eventBusAddress;
 	}
 
 	public void newClientConnection(@NotNull BedrockServerSession bedrockServerSession)
@@ -233,6 +239,10 @@ public class SessionsManager
 
 		PlayerSession playerSession = new PlayerSession(loginBedrockPacketHandler.bedrockServerSession, tcpClientSession, new PlayerConnectorPluginWrapper(this.connectorPlugin, loginInfo.uuid), this::onSessionClosed);
 		playerSession.setAssignedDimension(dimensionKey, dimensionId);
+		if (this.eventBusAddress != null)
+		{
+			playerSession.followAdventureChestLoot(this.eventBusAddress, resolvedInstanceId, loginInfo.uuid);
+		}
 		this.activeSessions.add(new ActiveSession(loginInfo.uuid, resolvedInstanceId, playerSession, loginBedrockPacketHandler.bedrockServerSession));
 
 		playerSession.mutex.lock();
