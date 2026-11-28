@@ -375,11 +375,12 @@ public class ChunkManager
 		}
 
 		boolean bedrockChanged = false;
+		int previousBlock = chunk.getBlock(blockX, blockY, blockZ, 0);
 		if (chunk.setBlock(blockX, blockY, blockZ, 0, bedrockMapping != null ? bedrockMapping.id : REPLACEMENT_BLOCK))
 		{
 			bedrockChanged = true;
 			this.sendBlockUpdate(position, 0, chunk.getBlock(blockX, blockY, blockZ, 0));
-			this.playerSession.onBlockChanged(position, chunk.getBlock(blockX, blockY, blockZ, 0));
+			this.playerSession.onBlockChanged(position, previousBlock, chunk.getBlock(blockX, blockY, blockZ, 0));
 		}
 
 		if (chunk.setBlock(blockX, blockY, blockZ, 1, bedrockMapping != null && bedrockMapping.waterlogged ? BedrockBlocks.WATER : BedrockBlocks.AIR))

@@ -859,11 +859,16 @@ public final class PlayerSession
 		this.damagedBlocks.add(position);
 	}
 
-	public void onBlockChanged(@NotNull Vector3i position, int bedrockBlockId)
+	public void onBlockChanged(@NotNull Vector3i position, int previousBedrockBlockId, int bedrockBlockId)
 	{
-		if (this.damagedBlocks.remove(position))
+		boolean placed = previousBedrockBlockId == BedrockBlocks.AIR && bedrockBlockId != BedrockBlocks.AIR;
+		if (placed || this.damagedBlocks.contains(position))
 		{
 			this.sendBlockDamage(position, bedrockBlockId, 0.0f);
+			if (bedrockBlockId != BedrockBlocks.AIR)
+			{
+				this.damagedBlocks.remove(position);
+			}
 		}
 	}
 
